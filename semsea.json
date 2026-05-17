@@ -1,0 +1,9 @@
+{
+  "batchSize" : 20,
+  "ignoredDirectories" : [ "node_modules", "target" ],
+  "maxChunkLines" : 50,
+  "maxChunkSize" : 1500,
+  "supportedFiles" : [ ".java", ".js", ".sql", ".txt", ".sql", ".json", ".xml" ],
+  "workspace" : "50e3334c-1b83-4e20-a3a4-4fe70ccdb3e0",
+  "limitMultiplier": 10
+}

@@ -1,0 +1,25 @@
+OLLAMA + NOMIC-EMBED-TEXT SETUP (http://localhost:11434):
+- download ollama image
+- execute command:
+    docker run -d --name ollama -p 11434:11434 -v ollama_data:/root/.ollama ollama/ollama
+
+- execute command to pull nomic-embed-text model inside ollama:
+    docker exec -it ollama ollama pull nomic-embed-text
+
+  The model will be stored in mounted volume ollama_data
+- Hit the `curl http://localhost:11434/api/tags` command which should print model details.
+- Hit the following command to generate embeddings:
+  curl http://localhost:11434/api/embeddings -d '{
+    "model": "nomic-embed-text",
+    "prompt": "Hello world"
+  }'
+
+CHROMA DB SETUP (http://localhost:8000):
+- download & run chromadb image with command:
+    docker run --volume=chroma-data:/chroma -p 8000:8000 -d chromadb/chroma:1.5.9
+
+- GET http://localhost:8000/api/v2 - heartbeat
+  GET http://localhost:8000/api/v2/collections - get collections
+  POST http://localhost:8000/api/v2/collections - post collections
+  POST http://localhost:8000/api/v2/collections/{collection_name}/add - add collections
+  POST http://localhost:8000/api/v2/collections/{collection_name}/query - execute a query
