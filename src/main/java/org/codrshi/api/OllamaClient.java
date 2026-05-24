@@ -13,12 +13,12 @@ import java.util.Map;
 
 public final class OllamaClient extends Client {
 
-    private final Logger log = LogManager.getLogger(OllamaClient.class.getName());
+    private final static Logger log = LogManager.getLogger(OllamaClient.class.getName());
 
-    private final String BASE_URL  = "http://localhost:11434/api";
-    private final String CREATE_EMBEDDINGS = "/embed";
-    private final String EMBEDDING_MODEL = "nomic-embed-text";
-    private final ObjectMapper objectMapper;
+    private final static String BASE_URL  = "http://localhost:11434/api";
+    private static final String CREATE_EMBEDDINGS = "/embed";
+    private final static String EMBEDDING_MODEL = "nomic-embed-text";
+    private ObjectMapper objectMapper;
 
     public OllamaClient() {
         super();
@@ -30,7 +30,7 @@ public final class OllamaClient extends Client {
     public List<List<Float>> createEmbeddings(List<String> texts){
         log.debug("Calling Ollama for creating {} embeddings.", texts.size());
 
-        CreateEmbeddingRequest createEmbeddingRequest = new CreateEmbeddingRequest(EMBEDDING_MODEL, texts);
+        CreateEmbeddingRequest createEmbeddingRequest = new CreateEmbeddingRequest(texts);
 
         String requestUrl = BASE_URL + CREATE_EMBEDDINGS;
         String requestBody = objectMapper.writeValueAsString(createEmbeddingRequest);
@@ -47,5 +47,9 @@ public final class OllamaClient extends Client {
         return EmbeddingMapper.map(embeddings);
     }
 
-    private record CreateEmbeddingRequest(String model, List<String> input){}
+    private record CreateEmbeddingRequest(String model, List<String> input){
+        public CreateEmbeddingRequest(List<String> input){
+            this(EMBEDDING_MODEL, input);
+        }
+    }
 }

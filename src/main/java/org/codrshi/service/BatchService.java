@@ -1,6 +1,7 @@
 package org.codrshi.service;
 
 import org.codrshi.api.ChromaClient;
+import org.codrshi.api.LLMClient;
 import org.codrshi.api.OllamaClient;
 import org.codrshi.config.ConfigManager;
 import org.codrshi.util.UUIDGenerator;
@@ -15,27 +16,25 @@ public class BatchService {
     private BatchContext batchContext;
     private final OllamaClient ollamaClient;
     private final ChromaClient chromaClient;
+    private final LLMClient llmClient;
 
     public BatchService() {
         batchContext = new BatchContext();
         ollamaClient = new OllamaClient();
         chromaClient = new ChromaClient();
+        llmClient = new LLMClient();
     }
 
-    public void addChunks(List<String> texts, Path relativePath, Map<String,Object> metadata) {
+    public void addChunks(String text, Path relativePath, Map<String,Object> metadata) {
 
-        for(String text : texts){
-            if(batchContext.position == BATCH_SIZE){
-                flush();
-            }
-
-            if(batchContext.position < BATCH_SIZE){
-                batchContext.texts.add(text);
-                batchContext.documents.add(relativePath.toString());
-                batchContext.metadatas.add(metadata);
-                batchContext.position++;
-            }
+        if(batchContext.position == BATCH_SIZE){
+            flush();
         }
+
+        batchContext.texts.add(llmClient.generateSummary(text, relativePath.getFileName().toString()));
+        batchContext.documents.add(relativePath.toString());
+        batchContext.metadatas.add(metadata);
+        batchContext.position++;
     }
 
     public void flush(){

@@ -21,7 +21,12 @@ public class ChunkUtil {
         log.debug("Creating chunks of {} lines...", lines.size());
 
         for(int currentLine = 0; currentLine < lines.size(); currentLine++) {
-            buffer.append(lines.get(currentLine)).append('\n');
+
+            if(lines.get(currentLine).length() > MAX_CHARS) {
+                addLargeLine(lines.get(currentLine), currentLine, results);
+            } else {
+                buffer.append(lines.get(currentLine)).append('\n');
+            }
 
             if(shouldSplit(buffer, startLine, currentLine)) {
                 results.add(buffer.toString().trim());
@@ -39,6 +44,15 @@ public class ChunkUtil {
         }
 
         return results;
+    }
+
+    private static void addLargeLine(String line, int lineNumber, List<String> results) {
+        for(int start = 0; start < line.length(); start+=MAX_CHARS) {
+            int end = Math.min(line.length(), start + MAX_CHARS);
+            results.add(line.substring(start, end));
+
+            log.debug("Chunk created of {} characters in line {}.", end-start, lineNumber);
+        }
     }
 
     //TODO: language-aware chunking with heuristic boundaries

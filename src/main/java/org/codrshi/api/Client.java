@@ -7,7 +7,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 //TODO: add retry logic
-public abstract sealed class Client permits ChromaClient, OllamaClient{
+public abstract sealed class Client permits ChromaClient, OllamaClient, LLMClient {
 
     private final HttpClient httpClient;
 

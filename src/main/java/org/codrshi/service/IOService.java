@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.stream.Collectors;
 
 //TODO: update whenever file is changed.
 public class IOService {
@@ -40,12 +41,18 @@ public class IOService {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if(attrs.isRegularFile()) {
-                    String fileType = getFileType(file.getFileName().toString());
-
-                    if(fileType!=null)
-                        processFile(projectPath, file, fileType);
+                if(!attrs.isRegularFile() || ConfigManager.getConfig().getIgnoredFiles().contains(file.getFileName().toString())) {
+                    log.debug("Ignoring file {}", file);
+                    return FileVisitResult.CONTINUE;
                 }
+
+                String fileType = getFileType(file.getFileName().toString());
+                if(fileType==null) {
+                    log.debug("Unsupported file type {}", file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                processFile(projectPath, file, fileType);
                 return FileVisitResult.CONTINUE;
             }
         });
@@ -57,11 +64,11 @@ public class IOService {
     private void processFile(Path projectPath, Path filePath, String fileType) throws IOException {
         log.debug("Processing file {}", filePath.getFileName());
 
-        List<String> textChunks = ChunkUtil.getChunks(Files.readAllLines(filePath));
+        //List<String> textChunks = ChunkUtil.getChunks(Files.readAllLines(filePath));
         Path relativePath = Path.of(projectPath.getFileName().toString(), projectPath.relativize(filePath).toString());
 
         Map<String,Object> metadata = Map.of("file-type", fileType, "last-modified-time", Files.getLastModifiedTime(filePath).toString());
-        batchService.addChunks(textChunks, relativePath, metadata);
+        batchService.addChunks(Files.readString(filePath), relativePath, metadata);
     }
 
     private String getFileType(String fileName) {
