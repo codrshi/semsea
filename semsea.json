@@ -3,8 +3,7 @@
   "ignoredDirectories" : [ ".git", "build", ".vscode", ".idea", "node_modules", "target" ],
   "ignoredFiles" : [ "package-lock.json" ],
   "limitMultiplier" : 10,
-  "maxChunkLines" : 100,
-  "maxChunkSize" : 3000,
-  "supportedFiles" : [ ".txt", ".conf", ".sql", ".js", ".java", ".json", ".xml" ],
-  "workspace" : "cbbfda17-0a68-4fe4-9ed2-fea6cde48e08"
+  "maxChunkSize" : 30000,
+  "supportedFiles" : [ ".txt", ".conf", ".sql", ".js", ".java", ".json", ".xml", ".html", ".css", "" ],
+  "workspace" : "2b8fdf0c-feee-472c-beca-0e328cc8b8e2"
 }

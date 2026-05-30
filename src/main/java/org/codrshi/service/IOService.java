@@ -3,13 +3,12 @@ package org.codrshi.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codrshi.config.ConfigManager;
-import org.codrshi.util.ChunkUtil;
+import org.codrshi.util.TerminalRenderer;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.stream.Collectors;
 
 //TODO: update whenever file is changed.
 public class IOService {
@@ -17,12 +16,14 @@ public class IOService {
     private static final Logger log = LogManager.getLogger(IOService.class.getName());
 
     private final BatchService batchService;
+    private TerminalRenderer terminalRenderer;
 
     public IOService() {
         batchService = new BatchService();
     }
 
     public void serialize(String path) throws IOException {
+        terminalRenderer = TerminalRenderer.get();
         Path projectPath = Path.of(path);
 
         log.debug("Resolved path from {} to {}", projectPath.toString(), projectPath.toRealPath());
@@ -63,12 +64,16 @@ public class IOService {
     // TODO: enable backpressure/rate limiting via queue + worker thread
     private void processFile(Path projectPath, Path filePath, String fileType) throws IOException {
         log.debug("Processing file {}", filePath.getFileName());
+        terminalRenderer.print("⏳ processing %s...", filePath.getFileName().toString());
+        long start = System.currentTimeMillis();
 
         //List<String> textChunks = ChunkUtil.getChunks(Files.readAllLines(filePath));
         Path relativePath = Path.of(projectPath.getFileName().toString(), projectPath.relativize(filePath).toString());
 
         Map<String,Object> metadata = Map.of("file-type", fileType, "last-modified-time", Files.getLastModifiedTime(filePath).toString());
         batchService.addChunks(Files.readString(filePath), relativePath, metadata);
+
+        terminalRenderer.print("\r\033[K✅ %s mounted (%.1fs)%n", filePath.getFileName().toString(), (System.currentTimeMillis() - start)/1000f);
     }
 
     private String getFileType(String fileName) {

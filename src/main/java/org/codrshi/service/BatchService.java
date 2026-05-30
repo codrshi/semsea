@@ -4,6 +4,7 @@ import org.codrshi.api.ChromaClient;
 import org.codrshi.api.LLMClient;
 import org.codrshi.api.OllamaClient;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.util.TerminalRenderer;
 import org.codrshi.util.UUIDGenerator;
 
 import java.nio.file.Path;
@@ -12,13 +13,16 @@ import java.util.*;
 public class BatchService {
 
     private static final int BATCH_SIZE = ConfigManager.getConfig().getBatchSize();
+    private static final int MAX_CHARS = ConfigManager.getConfig().getMaxChunkSize();
 
+    private final TerminalRenderer terminalRenderer;
     private BatchContext batchContext;
     private final OllamaClient ollamaClient;
     private final ChromaClient chromaClient;
     private final LLMClient llmClient;
 
     public BatchService() {
+        terminalRenderer = TerminalRenderer.get();
         batchContext = new BatchContext();
         ollamaClient = new OllamaClient();
         chromaClient = new ChromaClient();
@@ -27,14 +31,14 @@ public class BatchService {
 
     public void addChunks(String text, Path relativePath, Map<String,Object> metadata) {
 
-        if(batchContext.position == BATCH_SIZE){
-            flush();
+        if(text.length() < MAX_CHARS){
+            add(text,relativePath,metadata);
         }
 
-        batchContext.texts.add(llmClient.generateSummary(text, relativePath.getFileName().toString()));
-        batchContext.documents.add(relativePath.toString());
-        batchContext.metadatas.add(metadata);
-        batchContext.position++;
+        for(int start = 0; start < text.length(); start+=MAX_CHARS) {
+            int end = Math.min(text.length(), start + MAX_CHARS);
+            add(text.substring(start, end), relativePath, metadata);
+        }
     }
 
     public void flush(){
@@ -51,6 +55,17 @@ public class BatchService {
         chromaClient.saveEmbedding(collectionId, uuids, batchContext.documents, embeddings, batchContext.metadatas);
 
         batchContext = new BatchContext();
+    }
+
+    private void add(String text, Path relativePath, Map<String,Object> metadata) {
+        if(batchContext.position == BATCH_SIZE){
+            flush();
+        }
+
+        batchContext.texts.add(llmClient.generateSummary(text, relativePath.getFileName().toString()));
+        batchContext.documents.add(relativePath.toString());
+        batchContext.metadatas.add(metadata);
+        batchContext.position++;
     }
 
     private static class BatchContext {

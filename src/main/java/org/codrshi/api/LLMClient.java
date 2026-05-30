@@ -2,7 +2,6 @@ package org.codrshi.api;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codrshi.util.EmbeddingMapper;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -11,6 +10,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
 
+// TODO: use virtual threads for slow blocking calls
 public final class LLMClient extends Client{
     private final static Logger log = LogManager.getLogger(LLMClient.class.getName());
 

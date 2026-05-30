@@ -13,7 +13,6 @@ public class SemseaConfig{
     private Set<String> ignoredFiles;
     private Set<String> supportedFiles;
     private int maxChunkSize;
-    private int maxChunkLines;
     private int batchSize;
     private int limitMultiplier;
 }
