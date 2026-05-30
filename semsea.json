@@ -1,9 +1,13 @@
 {
   "batchSize" : 20,
+  "dbDirectory" : ".db",
+  "dbName" : "semsea.db",
+  "dbUrl" : "jdbc:sqlite",
   "ignoredDirectories" : [ ".git", "build", ".vscode", ".idea", "node_modules", "target" ],
   "ignoredFiles" : [ "package-lock.json" ],
   "limitMultiplier" : 10,
   "maxChunkSize" : 30000,
-  "supportedFiles" : [ ".txt", ".conf", ".sql", ".js", ".java", ".json", ".xml", ".html", ".css", "" ],
-  "workspace" : "2b8fdf0c-feee-472c-beca-0e328cc8b8e2"
+  "sqliteBatchSize" : 500,
+  "supportedFiles" : [ ".html", ".css", ".txt", ".conf", ".sql", ".js", ".java", ".json", ".xml" ],
+  "workspace" : "fa35d3ac-a22e-4dea-b181-a7e9f6591832"
 }

@@ -2,6 +2,7 @@ package org.codrshi.service;
 
 import org.codrshi.api.ChromaClient;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.repository.DbExecutor;
 
 import java.io.IOException;
 import java.util.Map;
@@ -18,6 +19,7 @@ public class MountService {
 
     public void unmount(String collection) {
         chromaClient.deleteCollection(collection);
+        DbExecutor.deleteWorkspace(collection);
     }
 
     public void mount(String collection, String path) throws IOException {
@@ -29,7 +31,13 @@ public class MountService {
         ConfigManager.updateWorkspace(collectionId);
 
         if(!isMounted){
-            ioService.serialize(path);
+            try {
+                ioService.serialize(path);
+            }
+            catch (Exception e) {
+                unmount(collection);
+                throw new RuntimeException("Failed to mount.", e);
+            }
         }
     }
 }

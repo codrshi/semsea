@@ -8,6 +8,7 @@ import org.codrshi.util.TerminalRenderer;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.*;
 
 //TODO: update whenever file is changed.
@@ -16,10 +17,12 @@ public class IOService {
     private static final Logger log = LogManager.getLogger(IOService.class.getName());
 
     private final BatchService batchService;
+    private final DbService dbService;
     private TerminalRenderer terminalRenderer;
 
     public IOService() {
         batchService = new BatchService();
+        dbService = new DbService();
     }
 
     public void serialize(String path) throws IOException {
@@ -59,6 +62,7 @@ public class IOService {
         });
 
         batchService.flush();
+        dbService.saveFlush();
     }
 
     // TODO: enable backpressure/rate limiting via queue + worker thread
@@ -69,9 +73,12 @@ public class IOService {
 
         //List<String> textChunks = ChunkUtil.getChunks(Files.readAllLines(filePath));
         Path relativePath = Path.of(projectPath.getFileName().toString(), projectPath.relativize(filePath).toString());
+        FileTime lastModifiedAt = Files.getLastModifiedTime(filePath);
 
-        Map<String,Object> metadata = Map.of("file-type", fileType, "last-modified-time", Files.getLastModifiedTime(filePath).toString());
+        Map<String,Object> metadata = Map.of("file-type", fileType, "last-modified-time", lastModifiedAt.toString());
+
         batchService.addChunks(Files.readString(filePath), relativePath, metadata);
+        dbService.save(relativePath.toString(), lastModifiedAt.toMillis(), Files.size(filePath));
 
         terminalRenderer.print("\r\033[K✅ %s mounted (%.1fs)%n", filePath.getFileName().toString(), (System.currentTimeMillis() - start)/1000f);
     }

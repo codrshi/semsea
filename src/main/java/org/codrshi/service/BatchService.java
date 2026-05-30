@@ -33,6 +33,7 @@ public class BatchService {
 
         if(text.length() < MAX_CHARS){
             add(text,relativePath,metadata);
+            return;
         }
 
         for(int start = 0; start < text.length(); start+=MAX_CHARS) {

@@ -8,6 +8,10 @@ import java.util.Set;
 @Getter
 @Setter
 public class SemseaConfig{
+    private String dbName;
+    private String dbDirectory;
+    private String dbUrl;
+    private int sqliteBatchSize;
     private String workspace;
     private Set<String> ignoredDirectories;
     private Set<String> ignoredFiles;
