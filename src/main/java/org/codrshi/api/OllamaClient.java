@@ -15,10 +15,10 @@ public final class OllamaClient extends Client {
 
     private final static Logger log = LogManager.getLogger(OllamaClient.class.getName());
 
-    private final static String BASE_URL  = "http://localhost:11434/api";
+    private static final String BASE_URL  = "http://localhost:11434/api";
     private static final String CREATE_EMBEDDINGS = "/embed";
-    private final static String EMBEDDING_MODEL = "nomic-embed-text";
-    private ObjectMapper objectMapper;
+    private static final String EMBEDDING_MODEL = "nomic-embed-text";
+    private final ObjectMapper objectMapper;
 
     public OllamaClient() {
         super();

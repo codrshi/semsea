@@ -24,8 +24,9 @@ public class ConfigManager {
         }
     }
 
-    public static void updateWorkspace(String collectionId){
-        semseaConfig.setWorkspace(collectionId);
+    public static void updateWorkspace(String workspace, String collectionId){
+        semseaConfig.setWorkspace(workspace);
+        semseaConfig.setCollectionId(collectionId);
         save(semseaConfig);
     }
 

@@ -8,7 +8,9 @@ import picocli.CommandLine.Command;
         version = "1.0",
         subcommands = {
                 AttachCommand.class,
-                FindCommand.class
+                FindCommand.class,
+                RemoveCommand.class,
+                RefreshCommand.class
         }
 )
 public class RootCommand implements Runnable {

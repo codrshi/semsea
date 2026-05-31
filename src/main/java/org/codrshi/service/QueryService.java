@@ -25,7 +25,7 @@ public class QueryService {
     }
 
     public List<List<String>> search(String query, int limit){
-        String collectionId = ConfigManager.getConfig().getWorkspace();
+        String collectionId = ConfigManager.getConfig().getCollectionId();
 
         // TODO: handle collectionId = null
         List<List<Float>> queryEmbedding = ollamaClient.createEmbeddings(List.of(query));

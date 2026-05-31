@@ -1,7 +1,6 @@
 package org.codrshi.repository;
 
 import org.codrshi.config.ConfigManager;
-import org.codrshi.config.SemseaConfig;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,20 +14,37 @@ public class DbManager {
     private static final String DB_NAME = ConfigManager.getConfig().getDbName();
     private static final String DB_DIRECTORY = ConfigManager.getConfig().getDbDirectory();
     private static final String DB_URL;
+    private static final String CREATE_WORKSPACE_TABLE =
+            """
+            CREATE TABLE IF NOT EXISTS workspace (
+                id TEXT,
+                collection_id TEXT UNIQUE NOT NULL,
+                last_refresh DATETIME NOT NULL,
+                location TEXT UNIQUE NOT NULL,
+            
+                PRIMARY KEY(id)
+            )
+            """;
+
     private static final String CREATE_METADATA_TABLE =
             """
             CREATE TABLE IF NOT EXISTS metadata (
-                workspace TEXT NOT NULL,
+                ids TEXT NOT NULL,
+                workspace_id TEXT NOT NULL,
                 file_path TEXT NOT NULL,
                 last_modified_at BIGINT NOT NULL,
                 file_size BIGINT NOT NULL,
             
-                PRIMARY KEY(workspace, file_path)
+                CONSTRAINT fk_workspace
+                       FOREIGN KEY (workspace_id)
+                       REFERENCES workspace(id)
+                       ON DELETE CASCADE,
+                CONSTRAINT uq_workspace_id_file_path UNIQUE(workspace_id, file_path)
             )
             """;
-    private static final String CREATE_IDX_WORKSPACE =
+    private static final String CREATE_IDX_METADATA_workspaceId =
             """
-            CREATE INDEX IF NOT EXISTS idx_workspace ON metadata(workspace);
+            CREATE INDEX IF NOT EXISTS idx_metadata ON metadata(workspace_id);
             """;
 
     static {
@@ -38,7 +54,7 @@ public class DbManager {
                     Files.createDirectories(dbDirectoryPath);
             }
 
-            DB_URL = ConfigManager.getConfig().getDbUrl() + ":" + dbDirectoryPath.resolve(DB_NAME);
+            DB_URL = ConfigManager.getConfig().getDbUrl() + ":" + dbDirectoryPath.resolve(DB_NAME) + "?foreign_keys=true";
         }
         catch (Exception e){
             throw new RuntimeException("Failed to initialize SQLite directory", e);
@@ -47,11 +63,12 @@ public class DbManager {
 
     public static void init(){
         try(Statement st = getConnection().createStatement()) {
+            st.execute(CREATE_WORKSPACE_TABLE);
             st.execute(CREATE_METADATA_TABLE);
-            st.execute(CREATE_IDX_WORKSPACE);
+            st.execute(CREATE_IDX_METADATA_workspaceId);
         }
         catch (Exception e){
-            throw new RuntimeException("Failed to initialize metadata table", e);
+            throw new RuntimeException("Failed to initialize database", e);
         }
     }
 

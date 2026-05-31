@@ -13,6 +13,7 @@ public class SemseaConfig{
     private String dbUrl;
     private int sqliteBatchSize;
     private String workspace;
+    private String collectionId;
     private Set<String> ignoredDirectories;
     private Set<String> ignoredFiles;
     private Set<String> supportedFiles;

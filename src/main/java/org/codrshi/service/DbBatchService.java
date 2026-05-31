@@ -6,33 +6,25 @@ import org.codrshi.repository.DbExecutor;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DbService {
+public class DbBatchService {
     private static final int BATCH_SIZE = ConfigManager.getConfig().getSqliteBatchSize();
 
     private List<List<Object>> filesToInsert;
-    private List<List<Object>> filesToUpdate;
     private List<List<Object>> filesToDelete;
 
-    public DbService() {
+    public DbBatchService() {
         filesToInsert = new ArrayList<>();
-        filesToUpdate = new ArrayList<>();
         filesToDelete = new ArrayList<>();
     }
 
-    public void save(String filePath, long lastModifiedAt, long fileSize) {
-        if(filesToInsert.size() >= BATCH_SIZE) {
+    public void save(String filePath, List<String> recordIds, long lastModifiedAt, long fileSize) {
+
+        if (filesToInsert.size() >= BATCH_SIZE) {
             saveFlush();
         }
 
-        filesToInsert.add(List.of(filePath, lastModifiedAt, fileSize));
-    }
+        filesToInsert.add(List.of(String.join( ",", recordIds), filePath, lastModifiedAt, fileSize));
 
-    public void update(String filePath, long lastModifiedAt, long fileSize) {
-        if(filesToUpdate.size() >= BATCH_SIZE) {
-            updateFlush();
-        }
-
-        filesToUpdate.add(List.of(filePath, lastModifiedAt, fileSize));
     }
 
     public void delete(String filePath) {
@@ -47,13 +39,6 @@ public class DbService {
         if(!filesToInsert.isEmpty()) {
             DbExecutor.saveAll(filesToInsert);
             filesToInsert = new ArrayList<>();
-        }
-    }
-
-    public void updateFlush(){
-        if(!filesToUpdate.isEmpty()) {
-            DbExecutor.updateAll(filesToUpdate);
-            filesToUpdate = new ArrayList<>();
         }
     }
 

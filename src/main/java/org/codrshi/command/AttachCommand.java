@@ -29,8 +29,6 @@ public class AttachCommand implements Runnable {
 
     private final MountService mountService;
 
-    private TerminalRenderer terminalRenderer;
-
     public AttachCommand() {
         mountService = new MountService();
     }
@@ -38,24 +36,20 @@ public class AttachCommand implements Runnable {
     @Override
     public void run() {
 
-        terminalRenderer = TerminalRenderer.init(commandSpec.commandLine().getOut());
+        TerminalRenderer.init(commandSpec.commandLine().getOut());
 
         if(clear) {
-            mountService.unmount(collection);
-            terminalRenderer.print("Cleared %s from registry.\n", collection);
+            mountService.unmount(path);
+            TerminalRenderer.print("Cleared [%s] from registry.\n", path);
         }
 
-        terminalRenderer.print("Mounting %s into registry.\n", collection);
+        TerminalRenderer.print("Mounting %s into registry.\n", collection);
 
         try {
             mountService.mount(collection, path);
         } catch (IOException e) {
-            mountService.unmount(collection);
             //throw new RuntimeException(e);
-            terminalRenderer.print("Failed to mount %s from registry.\n", collection);
+            TerminalRenderer.print("Failed to mount %s from registry.\n", collection);
         }
-
-        terminalRenderer.print("Successfully mounted %s. Currently pointing to %s.\n", collection, collection);
-
     }
 }

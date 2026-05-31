@@ -9,7 +9,6 @@ import tools.jackson.databind.json.JsonMapper;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public final class ChromaClient extends Client {
     private static final Logger logger = LogManager.getLogger(ChromaClient.class.getName());
@@ -19,6 +18,7 @@ public final class ChromaClient extends Client {
     private static final String GET_OR_CREATE_COLLECTION = "/tenants/default_tenant/databases/default_database/collections";
     private static final String SAVE_EMBEDDINGS = "/tenants/default_tenant/databases/default_database/collections/%s/add";
     private static final String SEARCH_EMBEDDINGS = "/tenants/default_tenant/databases/default_database/collections/%s/query";
+    private static final String DELETE_EMBEDDINGS = "/tenants/default_tenant/databases/default_database/collections/%s/delete";
 
     private final ObjectMapper objectMapper;
 
@@ -38,8 +38,8 @@ public final class ChromaClient extends Client {
         }
     }
 
-    public Map.Entry<String, Boolean> getOrCreateCollection(String collection) {
-        GetOrCreateCollectionRequest getOrCreateCollectionRequest = new GetOrCreateCollectionRequest(collection, true);
+    public String getOrCreateCollection(String collection) {
+        GetOrCreateCollectionRequest getOrCreateCollectionRequest = new GetOrCreateCollectionRequest(collection, false);
         String requestBody = objectMapper.writeValueAsString(getOrCreateCollectionRequest);
         String requestUrl = BASE_URL + GET_OR_CREATE_COLLECTION;
 
@@ -51,15 +51,10 @@ public final class ChromaClient extends Client {
         }
 
         Map<Object, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
-        String collectionId = (String) responseMap.get("id");
-        boolean isNew = responseMap.get("dimension") != null;
-
-        logger.info("attached to collection = {} with id = {}", collection, collectionId);
-
-        return Map.entry(collectionId, isNew);
+        return (String) responseMap.get("id");
     }
 
-    public void saveEmbedding(String collectionId, List<UUID> ids, List<String> documents, List<List<Float>> embeddings, List<Map<String, Object>> metadatas) {
+    public void saveEmbedding(String collectionId, List<String> ids, List<String> documents, List<List<Float>> embeddings, List<Map<String, Object>> metadatas) {
         logger.debug("Calling chromaDB to store {} embeddings.", documents.size());
 
         SaveEmbeddingRequest saveEmbeddingRequest = new SaveEmbeddingRequest(ids, documents, embeddings, metadatas);
@@ -91,7 +86,21 @@ public final class ChromaClient extends Client {
         return objectMapper.readValue(response.body(), Map.class);
     }
 
+    public void deleteEmbeddings(String collectionId, List<String> ids) {
+        DeleteEmbeddingRequest deleteEmbeddingRequest = new DeleteEmbeddingRequest(ids);
+        String requestBody = objectMapper.writeValueAsString(deleteEmbeddingRequest);
+        String requestUrl = BASE_URL + String.format(DELETE_EMBEDDINGS, collectionId);
+
+        HttpResponse<String> response = executePost(requestUrl, requestBody);
+
+        if(response.statusCode() != 200) {
+            logger.error("Failed to delete embeddings: {}", response);
+            throw new RuntimeException("Failed to delete embeddings: " + response.body());
+        }
+    }
+
     private record GetOrCreateCollectionRequest(String name, boolean get_or_create) {}
-    private record SaveEmbeddingRequest(List<UUID> ids, List<String> documents, List<List<Float>> embeddings, List<Map<String, Object>> metadatas) {}
+    private record SaveEmbeddingRequest(List<String> ids, List<String> documents, List<List<Float>> embeddings, List<Map<String, Object>> metadatas) {}
     private record SearchEmbeddingRequest(List<List<Float>> query_embeddings, int n_results) {}
+    private record DeleteEmbeddingRequest(List<String> ids) {}
 }

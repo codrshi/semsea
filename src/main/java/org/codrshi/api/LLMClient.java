@@ -97,7 +97,7 @@ public final class LLMClient extends Client{
 
         int tokens = (int) ((Map<String, Object>) responseBody.get("usage")).get("total_tokens");
 
-        Map<String, Object> choice = ((List<Map<String, Object>>) responseBody.get("choices")).get(0);
+        Map<String, Object> choice = ((List<Map<String, Object>>) responseBody.get("choices")).getFirst();
         String summary = ((String) ((Map<Object, Object>) choice.get("message")).get("content"));
 
         log.debug("{} tokens used. Generated summary: {}", tokens, summary);

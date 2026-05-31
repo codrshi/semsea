@@ -3,30 +3,27 @@ package org.codrshi.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codrshi.config.ConfigManager;
-import org.codrshi.util.TerminalRenderer;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
-import java.util.*;
+import java.util.Objects;
 
-//TODO: update whenever file is changed.
-public class IOService {
-
+public abstract class IOService {
     private static final Logger log = LogManager.getLogger(IOService.class.getName());
 
-    private final BatchService batchService;
-    private final DbService dbService;
-    private TerminalRenderer terminalRenderer;
+    protected final BatchService batchService;
+    protected final DbBatchService dbBatchService;
 
     public IOService() {
         batchService = new BatchService();
-        dbService = new DbService();
+        dbBatchService = new DbBatchService();
     }
 
     public void serialize(String path) throws IOException {
-        terminalRenderer = TerminalRenderer.get();
         Path projectPath = Path.of(path);
 
         log.debug("Resolved path from {} to {}", projectPath.toString(), projectPath.toRealPath());
@@ -61,26 +58,7 @@ public class IOService {
             }
         });
 
-        batchService.flush();
-        dbService.saveFlush();
-    }
-
-    // TODO: enable backpressure/rate limiting via queue + worker thread
-    private void processFile(Path projectPath, Path filePath, String fileType) throws IOException {
-        log.debug("Processing file {}", filePath.getFileName());
-        terminalRenderer.print("⏳ processing %s...", filePath.getFileName().toString());
-        long start = System.currentTimeMillis();
-
-        //List<String> textChunks = ChunkUtil.getChunks(Files.readAllLines(filePath));
-        Path relativePath = Path.of(projectPath.getFileName().toString(), projectPath.relativize(filePath).toString());
-        FileTime lastModifiedAt = Files.getLastModifiedTime(filePath);
-
-        Map<String,Object> metadata = Map.of("file-type", fileType, "last-modified-time", lastModifiedAt.toString());
-
-        batchService.addChunks(Files.readString(filePath), relativePath, metadata);
-        dbService.save(relativePath.toString(), lastModifiedAt.toMillis(), Files.size(filePath));
-
-        terminalRenderer.print("\r\033[K✅ %s mounted (%.1fs)%n", filePath.getFileName().toString(), (System.currentTimeMillis() - start)/1000f);
+        flush();
     }
 
     private String getFileType(String fileName) {
@@ -88,4 +66,8 @@ public class IOService {
                 .stream().filter(fileName::endsWith)
                 .findFirst().orElse(null);
     }
+
+    protected abstract void processFile(Path projectPath, Path filePath, String fileType)  throws IOException;
+
+    protected abstract void flush();
 }
