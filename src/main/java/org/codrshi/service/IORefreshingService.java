@@ -54,6 +54,8 @@ public class IORefreshingService extends IOService{
 
         batchService.deleteFlush();
         dbBatchService.deleteFlush();
+
+        batchService.llmFlush();
         batchService.saveFlush();
         dbBatchService.saveFlush();
     }
@@ -63,10 +65,10 @@ public class IORefreshingService extends IOService{
             return;
         }
 
-        metadataHolderMap.entrySet().forEach(entry -> {
-            TerminalRenderer.print("processing deleted file %s...", entry.getKey());
-            batchService.deleteChunks(entry.getValue().ids());
-            dbBatchService.delete(entry.getKey());
+        metadataHolderMap.forEach((key, value) -> {
+            TerminalRenderer.print("processing deleted file %s...", key);
+            batchService.deleteChunks(value.ids());
+            dbBatchService.delete(key);
         });
     }
 

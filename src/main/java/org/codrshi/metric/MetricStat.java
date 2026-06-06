@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 public class MetricStat {
-    private List<Long> totalNanos = new ArrayList<>();
+    private final List<Long> totalNanos = new ArrayList<>();
 
     public void record(long durationNanos) {
         totalNanos.add(durationNanos);

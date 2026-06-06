@@ -37,6 +37,7 @@ public class IOMountingService extends IOService {
 
     @Override
     public void flush() {
+        batchService.llmFlush();
         batchService.saveFlush();
         dbBatchService.saveFlush();
     }

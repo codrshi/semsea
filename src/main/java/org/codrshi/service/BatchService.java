@@ -11,9 +11,10 @@ import java.util.*;
 public class BatchService {
 
     private static final int BATCH_SIZE = ConfigManager.getConfig().getBatchSize();
-    private static final int MAX_CHARS = ConfigManager.getConfig().getMaxChunkSize();
+    private static final int MAX_LLM_CHARS = ConfigManager.getConfig().getLlmContextLimit();
 
-    private BatchContext batchContext;
+    private EmbeddingBatchContext embeddingBatchContext;
+    private LlmBatchContext llmBatchContext;
     private List<String> embeddingsToDelete;
     private final OllamaClient ollamaClient;
     private final ChromaClient chromaClient;
@@ -21,7 +22,8 @@ public class BatchService {
 
     public BatchService() {
         embeddingsToDelete = new ArrayList<>();
-        batchContext = new BatchContext();
+        embeddingBatchContext = new EmbeddingBatchContext();
+        llmBatchContext = new LlmBatchContext();
         ollamaClient = new OllamaClient();
         chromaClient = new ChromaClient();
         llmClient = new LLMClient();
@@ -31,16 +33,16 @@ public class BatchService {
 
         List<String> uuids = new ArrayList<>();
 
-        if(text.length() < MAX_CHARS){
+        if(text.length() <= llmBatchContext.availableChars()){
             uuids.add(UUID.randomUUID().toString());
-            add(text,relativePath, uuids.getLast(), metadata);
+            addToLlmBatch(text,relativePath, uuids.getLast(), metadata);
             return uuids;
         }
 
-        for(int start = 0; start < text.length(); start+=MAX_CHARS) {
-            int end = Math.min(text.length(), start + MAX_CHARS);
+        for(int start = 0; start < text.length(); start+=MAX_LLM_CHARS) {
+            int end = Math.min(text.length(), start + MAX_LLM_CHARS);
             uuids.add(UUID.randomUUID().toString());
-            add(text.substring(start, end), relativePath, uuids.getLast(), metadata);
+            addToLlmBatch(text.substring(start, end), relativePath, uuids.getLast(), metadata);
         }
 
         return uuids;
@@ -58,17 +60,17 @@ public class BatchService {
 
     public void saveFlush(){
 
-        if(batchContext.position == 0){
+        if(embeddingBatchContext.count == 0){
             return;
         }
 
         String collectionId = ConfigManager.getConfig().getCollectionId();
 
-        List<List<Float>> embeddings = ollamaClient.createEmbeddings(batchContext.texts);
+        List<List<Float>> embeddings = ollamaClient.createEmbeddings(embeddingBatchContext.texts);
 
-        chromaClient.saveEmbedding(collectionId, batchContext.ids, batchContext.documents, embeddings, batchContext.metadatas);
+        chromaClient.saveEmbedding(collectionId, embeddingBatchContext.ids, embeddingBatchContext.documents, embeddings, embeddingBatchContext.metadatas);
 
-        batchContext = new BatchContext();
+        embeddingBatchContext = new EmbeddingBatchContext();
     }
 
     public void deleteFlush(){
@@ -80,29 +82,78 @@ public class BatchService {
         embeddingsToDelete = new ArrayList<>();
     }
 
-    private void add(String text, Path relativePath, String uuid, Map<String,Object> metadata) {
-        if(batchContext.position == BATCH_SIZE){
+    public void llmFlush() {
+        if(llmBatchContext.texts.isEmpty()){
+            return;
+        }
+
+        List<String> summaries = llmClient.generateSummary(llmBatchContext.texts, llmBatchContext.relativePath);
+
+        for(int i=0; i<summaries.size(); i++){
+            addToEmbeddingBatch(summaries.get(i), llmBatchContext.relativePath.get(i), llmBatchContext.ids.get(i), llmBatchContext.metadatas.get(i));
+        }
+
+        llmBatchContext = new LlmBatchContext();
+    }
+
+    private void addToLlmBatch(String text, Path relativePath, String uuid, Map<String,Object> metadata) {
+        if(llmBatchContext.totalChars + text.length() >= MAX_LLM_CHARS){
+            llmFlush();
+        }
+
+        llmBatchContext.ids.add(uuid);
+        llmBatchContext.texts.add(text);
+        llmBatchContext.relativePath.add(relativePath);
+        llmBatchContext.metadatas.add(metadata);
+        llmBatchContext.totalChars += text.length();
+    }
+
+    private void addToEmbeddingBatch(String summary, Path relativePath, String uuid, Map<String,Object> metadata) {
+        if(embeddingBatchContext.count == BATCH_SIZE){
             saveFlush();
         }
 
-        batchContext.ids.add(uuid);
-        batchContext.texts.add(llmClient.generateSummary(text, relativePath.getFileName().toString()));
-        batchContext.documents.add(relativePath.toString());
-        batchContext.metadatas.add(metadata);
-        batchContext.position++;
+        embeddingBatchContext.ids.add(uuid);
+        embeddingBatchContext.texts.add(summary);
+        embeddingBatchContext.documents.add(relativePath.toString());
+        embeddingBatchContext.metadatas.add(metadata);
+        embeddingBatchContext.count++;
+    }
+
+    private static class LlmBatchContext extends BatchContext {
+        int totalChars;
+        final List<Path> relativePath;
+
+        public LlmBatchContext() {
+            super();
+            totalChars = 0;
+            relativePath =  new ArrayList<>();
+        }
+
+        public int availableChars() {
+            return MAX_LLM_CHARS - totalChars;
+        }
+    }
+
+    private static class EmbeddingBatchContext extends BatchContext{
+        int count;
+        final List<String> documents;
+
+        public EmbeddingBatchContext() {
+            super();
+            count = 0;
+            documents = new ArrayList<>();
+        }
     }
 
     private static class BatchContext {
-        int position;
+
         final List<String> ids;
         final List<String> texts;
-        final List<String> documents;
         final List<Map<String, Object>> metadatas;
 
         public BatchContext() {
-            position = 0;
             ids = new ArrayList<>();
-            documents = new ArrayList<>();
             texts = new ArrayList<>();
             metadatas = new ArrayList<>();
         }
