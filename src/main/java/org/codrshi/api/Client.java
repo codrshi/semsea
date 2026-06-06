@@ -1,5 +1,9 @@
 package org.codrshi.api;
 
+import org.codrshi.metric.MetricCollector;
+import org.codrshi.metric.MetricType;
+import org.codrshi.metric.Timer;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -15,7 +19,7 @@ public abstract sealed class Client permits ChromaClient, OllamaClient, LLMClien
         httpClient = HttpClient.newHttpClient();
     }
 
-    protected HttpResponse<String> executePost(String url, String requestBody){
+    protected HttpResponse<String> executePost(String url, String requestBody, MetricType metricType) {
 
         HttpRequest request = HttpRequest
                 .newBuilder(URI.create(url))
@@ -23,10 +27,10 @@ public abstract sealed class Client permits ChromaClient, OllamaClient, LLMClien
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
 
-        return execute(request);
+        return execute(request, metricType);
     }
 
-    protected HttpResponse<String> executeDelete(String url){
+    protected HttpResponse<String> executeDelete(String url, MetricType metricType) {
 
         HttpRequest request = HttpRequest
                 .newBuilder(URI.create(url))
@@ -34,19 +38,21 @@ public abstract sealed class Client permits ChromaClient, OllamaClient, LLMClien
                 .DELETE()
                 .build();
 
-        return execute(request);
+        return execute(request, metricType);
     }
 
 
-    private HttpResponse<String> execute(HttpRequest request){
+    private HttpResponse<String> execute(HttpRequest request,  MetricType metricType) {
         HttpResponse<String> response;
 
+        long startNanos = Timer.start();
         try {
             response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
 
+        MetricCollector.record(metricType, Timer.stop(startNanos));
         return response;
     }
 }

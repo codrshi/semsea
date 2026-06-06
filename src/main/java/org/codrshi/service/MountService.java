@@ -2,6 +2,9 @@ package org.codrshi.service;
 
 import org.codrshi.api.ChromaClient;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.metric.MetricCollector;
+import org.codrshi.metric.MetricType;
+import org.codrshi.metric.Timer;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.util.TerminalRenderer;
 
@@ -52,11 +55,17 @@ public class MountService {
             DbExecutor.saveWorkspace(workspace, absolutePath,  collectionId);
             ConfigManager.updateWorkspace(workspace, collectionId);
 
+            long startNanos = Timer.start();
+
             ioMountingService.serialize(path);
+
+            MetricCollector.record(MetricType.FILE_TRAVERSAL, Timer.stop(startNanos));
         }
         catch (Exception e) {
             unmount(path);
             throw new RuntimeException("Failed to mount.", e);
         }
+
+        MetricCollector.print("WORKSPACE MOUNTING");
     }
 }

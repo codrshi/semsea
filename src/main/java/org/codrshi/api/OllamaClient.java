@@ -2,6 +2,7 @@ package org.codrshi.api;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.codrshi.metric.MetricType;
 import org.codrshi.util.EmbeddingMapper;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -35,7 +36,7 @@ public final class OllamaClient extends Client {
         String requestUrl = BASE_URL + CREATE_EMBEDDINGS;
         String requestBody = objectMapper.writeValueAsString(createEmbeddingRequest);
 
-        HttpResponse<String> response = executePost(requestUrl, requestBody);
+        HttpResponse<String> response = executePost(requestUrl, requestBody, MetricType.OLLAMA_CREATE_EMBEDDINGS);
 
         if (response.statusCode() != 200) {
             throw new RuntimeException("Failed to create embedding: " + response.body());

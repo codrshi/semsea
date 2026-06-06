@@ -2,6 +2,7 @@ package org.codrshi.api;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.codrshi.metric.MetricType;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -81,7 +82,7 @@ public final class LLMClient extends Client{
         String requestUrl = BASE_URL + CHAT_COMPLETIONS;
         String requestBody = objectMapper.writeValueAsString(chatCompletionRequest);
 
-        HttpResponse<String> response = executePost(requestUrl, requestBody);
+        HttpResponse<String> response = executePost(requestUrl, requestBody, MetricType.LLM_GENERATE_SUMMARY);
 
         if (response.statusCode() != 200) {
             throw new RuntimeException("Failed to generate LLM summary: " + response.body());

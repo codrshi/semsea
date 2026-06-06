@@ -2,6 +2,7 @@ package org.codrshi.api;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.codrshi.metric.MetricType;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
@@ -31,7 +32,7 @@ public final class ChromaClient extends Client {
 
     public void deleteCollection(String collection) {
         String requestUrl = BASE_URL + String.format(DELETE_COLLECTION, collection);
-        HttpResponse<String> response = executeDelete(requestUrl);
+        HttpResponse<String> response = executeDelete(requestUrl, MetricType.CHROMA_DELETE_COLLECTION);
 
         if(response.statusCode() != 200) {
             logger.warn("Failed to delete collection: {}", response);
@@ -43,7 +44,7 @@ public final class ChromaClient extends Client {
         String requestBody = objectMapper.writeValueAsString(getOrCreateCollectionRequest);
         String requestUrl = BASE_URL + GET_OR_CREATE_COLLECTION;
 
-        HttpResponse<String> response = executePost(requestUrl, requestBody);
+        HttpResponse<String> response = executePost(requestUrl, requestBody, MetricType.CHROMA_GET_OR_CREATE_COLLECTION);
 
         if(response.statusCode() != 200) {
             logger.error("Failed to get/create collection: {}", response);
@@ -61,7 +62,7 @@ public final class ChromaClient extends Client {
         String requestBody = objectMapper.writeValueAsString(saveEmbeddingRequest);
         String requestUrl = BASE_URL + String.format(SAVE_EMBEDDINGS, collectionId);
 
-        HttpResponse<String> response = executePost(requestUrl, requestBody);
+        HttpResponse<String> response = executePost(requestUrl, requestBody, MetricType.CHROMA_SAVE_EMBEDDINGS);
 
         if(response.statusCode() != 201) {
             logger.error("Failed to save embeddings: {}", response);
@@ -76,7 +77,7 @@ public final class ChromaClient extends Client {
         String requestBody = objectMapper.writeValueAsString(searchEmbeddingRequest);
         String requestUrl = BASE_URL + String.format(SEARCH_EMBEDDINGS, collectionId);
 
-        HttpResponse<String> response = executePost(requestUrl, requestBody);
+        HttpResponse<String> response = executePost(requestUrl, requestBody, MetricType.CHROMA_SEARCH_EMBEDDINGS);
 
         if(response.statusCode() != 200) {
             logger.error("Failed to search embeddings: {}", response);
@@ -91,7 +92,7 @@ public final class ChromaClient extends Client {
         String requestBody = objectMapper.writeValueAsString(deleteEmbeddingRequest);
         String requestUrl = BASE_URL + String.format(DELETE_EMBEDDINGS, collectionId);
 
-        HttpResponse<String> response = executePost(requestUrl, requestBody);
+        HttpResponse<String> response = executePost(requestUrl, requestBody, MetricType.CHROMA_DELETE_EMBEDDINGS);
 
         if(response.statusCode() != 200) {
             logger.error("Failed to delete embeddings: {}", response);

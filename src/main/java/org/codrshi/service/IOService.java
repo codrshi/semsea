@@ -3,6 +3,9 @@ package org.codrshi.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.metric.MetricCollector;
+import org.codrshi.metric.MetricType;
+import org.codrshi.metric.Timer;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -53,7 +56,10 @@ public abstract class IOService {
                     return FileVisitResult.CONTINUE;
                 }
 
+                long startNanos = Timer.start();
                 processFile(projectPath, file, fileType);
+                MetricCollector.record(MetricType.FILE_PROCESSING, Timer.stop(startNanos));
+
                 return FileVisitResult.CONTINUE;
             }
         });

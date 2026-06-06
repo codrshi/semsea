@@ -1,6 +1,9 @@
 package org.codrshi.repository;
 
 import org.codrshi.config.ConfigManager;
+import org.codrshi.metric.MetricCollector;
+import org.codrshi.metric.MetricType;
+import org.codrshi.metric.Timer;
 import org.codrshi.util.MetadataHolder;
 
 import java.sql.*;
@@ -79,19 +82,6 @@ public class DbExecutor {
         });
     }
 
-    // column order in list: filePath, lastModifiedAt, fileSize
-    public static void updateAll(List<List<Object>> list){
-
-        executeBatch(UPDATE_FILES_IN_METADATA, list, (PreparedStatement ps, List<Object> row) -> {
-            ps.setLong(1, (Long) row.get(1));
-            ps.setLong(2, (Long) row.get(2));
-            ps.setString(3, ConfigManager.getConfig().getWorkspace());
-            ps.setString(4, row.get(0).toString());
-
-            ps.addBatch();
-        });
-    }
-
     // column order in list: filePath
     public static void deleteAll(List<List<Object>> list){
         executeBatch(DELETE_FILES_FROM_METADATA, list, (PreparedStatement ps, List<Object> row) -> {
@@ -105,6 +95,7 @@ public class DbExecutor {
     public static String deleteWorkspaceByLocation(String path){
 
         String workspace = null;
+        long startNanos = Timer.start();
 
         try (
                 Connection connection = DbManager.getConnection();
@@ -126,11 +117,13 @@ public class DbExecutor {
             throw new RuntimeException(e);
         }
 
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
         return workspace;
     }
 
     public static boolean deleteWorkspaceByID(String id){
         boolean isDeleted;
+        long startNanos = Timer.start();
 
         try (
                 Connection connection = DbManager.getConnection();
@@ -144,12 +137,14 @@ public class DbExecutor {
             throw new RuntimeException(e);
         }
 
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
         return isDeleted;
     }
     public static List<Object> exists(String workspace, String location){
 
         String collectionId = null;
         boolean isSinglePresent = false;
+        long startNanos = Timer.start();
 
         try (
                 Connection connection = DbManager.getConnection();
@@ -180,10 +175,13 @@ public class DbExecutor {
             throw new RuntimeException(e);
         }
 
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
         return Arrays.asList(collectionId, isSinglePresent);
     }
 
     public static void saveWorkspace(String workspace, String location, String collectionId){
+        long startNanos = Timer.start();
+
         try (
                 Connection connection = DbManager.getConnection();
                 PreparedStatement ps = connection.prepareStatement(INSERT_INTO_WORKSPACE)
@@ -198,10 +196,13 @@ public class DbExecutor {
         catch (SQLException e) {
             throw new RuntimeException(e);
         }
+
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
     }
 
     public static Map<String, MetadataHolder> loadMetadata(String workspace){
         Map<String, MetadataHolder> map = new ConcurrentHashMap<>();
+        long startNanos = Timer.start();
 
         try (
                 Connection connection = DbManager.getConnection();
@@ -226,11 +227,14 @@ public class DbExecutor {
             throw new RuntimeException(e);
         }
 
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
         return map;
     }
 
     public static String getWorkspaceLocation(String workspace){
         String location = null;
+        long startNanos = Timer.start();
+
         try (
                 Connection connection = DbManager.getConnection();
                 PreparedStatement ps = connection.prepareStatement(GET_WORKSPACE_LOCATION)
@@ -251,10 +255,13 @@ public class DbExecutor {
             throw new RuntimeException(e);
         }
 
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
         return location;
     }
 
     private static void executeBatch(String sql, List<List<Object>> list, BatchAdder batchAdder){
+        long startNanos = Timer.start();
+
         try (
                 Connection connection = DbManager.getConnection();
                 PreparedStatement ps = connection.prepareStatement(sql)
@@ -276,6 +283,8 @@ public class DbExecutor {
         catch (SQLException e) {
             throw new RuntimeException(e);
         }
+
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
     }
 
     private interface BatchAdder {
