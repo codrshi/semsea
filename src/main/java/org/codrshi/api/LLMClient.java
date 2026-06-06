@@ -15,9 +15,9 @@ import java.util.Map;
 public final class LLMClient extends Client{
     private final static Logger log = LogManager.getLogger(LLMClient.class.getName());
 
-    private final static String BASE_URL  = "http://localhost:12434/engines/v1";
+    private final static String BASE_URL  = "http://localhost:11434/v1";
     private final static String CHAT_COMPLETIONS = "/chat/completions";
-    private final static String LLM_MODEL = "ai/llama3.2";
+    private final static String LLM_MODEL = "qwen2.5-coder:3b";
     private static final String SYSTEM_PROMPT =
             """
             You are a semantic code indexing engine.

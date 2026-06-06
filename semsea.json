@@ -1,6 +1,6 @@
 {
   "batchSize" : 20,
-  "collectionId" : "f4b36488-1270-4cef-89be-921e867d63a9",
+  "collectionId" : "285e74e9-f19d-4520-8857-448020e42038",
   "dbDirectory" : ".db",
   "dbName" : "semsea.db",
   "dbUrl" : "jdbc:sqlite",
