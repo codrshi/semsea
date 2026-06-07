@@ -1,5 +1,6 @@
 package org.codrshi.command;
 
+import org.codrshi.metric.MetricCollector;
 import org.codrshi.service.MountService;
 import org.codrshi.util.TerminalRenderer;
 import picocli.CommandLine.Model.CommandSpec;
@@ -51,5 +52,7 @@ public class AttachCommand implements Runnable {
             //throw new RuntimeException(e);
             TerminalRenderer.print("Failed to mount %s from registry.\n", collection);
         }
+
+        MetricCollector.print("ATTACH_COMMAND");
     }
 }

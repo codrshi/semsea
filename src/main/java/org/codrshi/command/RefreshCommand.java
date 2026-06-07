@@ -1,6 +1,9 @@
 package org.codrshi.command;
 
 import org.codrshi.config.ConfigManager;
+import org.codrshi.metric.MetricCollector;
+import org.codrshi.metric.MetricType;
+import org.codrshi.metric.Timer;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.service.IORefreshingService;
 import org.codrshi.service.IOService;
@@ -46,5 +49,7 @@ public class RefreshCommand implements Runnable {
             TerminalRenderer.print("Failed to refresh workspace.");
             throw new RuntimeException(e);
         }
+
+        MetricCollector.print("REFRESH_COMMAND");
     }
 }

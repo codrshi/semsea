@@ -27,6 +27,7 @@ public abstract class IOService {
     }
 
     public void serialize(String path) throws IOException {
+        long startNanos = Timer.start();
         Path projectPath = Path.of(path);
 
         log.debug("Resolved path from {} to {}", projectPath.toString(), projectPath.toRealPath());
@@ -65,6 +66,7 @@ public abstract class IOService {
         });
 
         flush();
+        MetricCollector.record(MetricType.FILE_TRAVERSAL, Timer.stop(startNanos));
     }
 
     private String getFileType(String fileName) {

@@ -2,6 +2,7 @@ package org.codrshi.command;
 
 import org.codrshi.api.ChromaClient;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.metric.MetricCollector;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.util.TerminalRenderer;
 import picocli.CommandLine.Model.CommandSpec;
@@ -39,5 +40,6 @@ public class RemoveCommand implements Runnable {
         }
 
         TerminalRenderer.print("Workspace \"%s\" deleted successfully.",  collection);
+        MetricCollector.print("REMOVE_COMMAND");
     }
 }

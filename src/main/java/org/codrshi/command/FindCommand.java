@@ -1,5 +1,6 @@
 package org.codrshi.command;
 
+import org.codrshi.metric.MetricCollector;
 import org.codrshi.service.QueryService;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
@@ -42,6 +43,7 @@ public class FindCommand implements Callable<Integer> {
             System.out.printf("\n%-50s\t\t%-30s", truncatedFileName, file.get(1));
         });
 
+        MetricCollector.print("FIND_COMMAND");
         return 0;
     }
 }
