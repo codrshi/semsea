@@ -1,6 +1,7 @@
 package org.codrshi.command;
 
 import org.codrshi.config.ConfigManager;
+import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.service.QueryService;
 import org.codrshi.util.TerminalRenderer;
@@ -44,13 +45,9 @@ public class FindCommand implements Callable<Integer> {
 
         String workspace = ConfigManager.getConfig().getWorkspace();
         if(workspace == null || ConfigManager.getConfig().getCollectionId() == null) {
-            TerminalRenderer.println();
-            TerminalRenderer.println("  %s no workspace is currently attached.",
-                    TerminalRenderer.red("x"));
-            TerminalRenderer.println("  %s",
-                    TerminalRenderer.dim("Run 'semsea attach <workspace> --path <dir>' first."));
-            TerminalRenderer.println();
-            return 1;
+            throw new SemseaException(
+                    "No workspace is currently attached.",
+                    "Run 'semsea attach <workspace> --path <dir>' first.");
         }
 
         List<List<String>> result = queryService.search(query, limit);

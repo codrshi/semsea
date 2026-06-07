@@ -9,9 +9,6 @@ import picocli.CommandLine.Spec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-import java.io.IOException;
-import java.nio.file.Path;
-
 // TODO: exit automatically when user changes branch of project (rebouncing)
 // TODO: use WatcherService API to continously monitor for system changes.
 @Command(
@@ -43,21 +40,9 @@ public class AttachCommand implements Runnable {
 
     @Override
     public void run() {
-
         TerminalRenderer.init(commandSpec.commandLine().getOut());
 
-        String absolutePath;
-        try {
-            absolutePath = Path.of(path).toRealPath().toString();
-        }
-        catch (IOException e) {
-            TerminalRenderer.println();
-            TerminalRenderer.println("  %s could not resolve path %s",
-                    TerminalRenderer.red("x"),
-                    TerminalRenderer.dim(path.isEmpty() ? "<current directory>" : path));
-            TerminalRenderer.println();
-            return;
-        }
+        String absolutePath = MountService.resolveAbsolutePath(path);
 
         TerminalRenderer.println();
         TerminalRenderer.println("  %s %s",
@@ -73,16 +58,7 @@ public class AttachCommand implements Runnable {
                     TerminalRenderer.gray("-"));
         }
 
-        try {
-            mountService.mount(collection, path);
-        } catch (IOException e) {
-            TerminalRenderer.println();
-            TerminalRenderer.println("  %s failed to attach workspace %s",
-                    TerminalRenderer.red("x"),
-                    TerminalRenderer.bold(collection));
-            TerminalRenderer.println();
-        }
-
+        mountService.mount(collection, path);
         MetricCollector.print("ATTACH_COMMAND");
     }
 }

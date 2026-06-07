@@ -1,6 +1,9 @@
 package org.codrshi.repository;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.metric.MetricType;
 import org.codrshi.metric.Timer;
@@ -11,6 +14,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DbExecutor {
+
+    private static final Logger log = LogManager.getLogger(DbExecutor.class);
+
+    private static final String DB_ERROR_MESSAGE = "Local database operation failed.";
+
     private static final String INSERT_FILES_INTO_METADATA =
             """
             INSERT OR REPLACE INTO metadata(ids, workspace_id, file_path, last_modified_at, file_size)
@@ -62,14 +70,12 @@ public class DbExecutor {
 
     // column order in list: id, filePath, lastModifiedAt, fileSize
     public static void saveAll(List<List<Object>> list){
-
         executeBatch(INSERT_FILES_INTO_METADATA, list, (PreparedStatement ps, List<Object> row) -> {
             ps.setString(1, row.get(0).toString());
             ps.setString(2, ConfigManager.getConfig().getWorkspace());
             ps.setString(3, row.get(1).toString());
             ps.setLong(4, (Long) row.get(2));
             ps.setLong(5, (Long) row.get(3));
-
             ps.addBatch();
         });
     }
@@ -79,61 +85,47 @@ public class DbExecutor {
         executeBatch(DELETE_FILES_FROM_METADATA, list, (PreparedStatement ps, List<Object> row) -> {
             ps.setString(1, ConfigManager.getConfig().getWorkspace());
             ps.setString(2, row.getFirst().toString());
-
             ps.addBatch();
         });
     }
 
     public static String deleteWorkspaceByLocation(String path){
-
-        String workspace = null;
         long startNanos = Timer.start();
-
         try (
                 Connection connection = DbManager.getConnection();
                 PreparedStatement ps = connection.prepareStatement(DELETE_COLLECTION_FROM_WORKSPACE_USING_LOCATION)
         ) {
-
             ps.setString(1, path);
-
-            try(ResultSet resultSet = ps.executeQuery()){
-                if(resultSet.next()){
-                    workspace = resultSet.getString("id");
-                }
-            }
-            catch(Exception e) {
-                throw e;
+            try(ResultSet resultSet = ps.executeQuery()) {
+                String workspace = resultSet.next() ? resultSet.getString("id") : null;
+                MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+                return workspace;
             }
         }
         catch (SQLException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to delete workspace by location '{}'", path, e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
-
-        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
-        return workspace;
     }
 
     public static boolean deleteWorkspaceByID(String id){
-        boolean isDeleted;
         long startNanos = Timer.start();
-
         try (
                 Connection connection = DbManager.getConnection();
                 PreparedStatement ps = connection.prepareStatement(DELETE_COLLECTION_FROM_WORKSPACE_USING_ID)
         ) {
-
             ps.setString(1, id);
-            isDeleted = ps.executeUpdate() == 1;
+            boolean isDeleted = ps.executeUpdate() == 1;
+            MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+            return isDeleted;
         }
         catch (SQLException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to delete workspace by id '{}'", id, e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
-
-        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
-        return isDeleted;
     }
-    public static List<Object> exists(String workspace, String location){
 
+    public static List<Object> exists(String workspace, String location){
         String collectionId = null;
         boolean isSinglePresent = false;
         long startNanos = Timer.start();
@@ -142,14 +134,13 @@ public class DbExecutor {
                 Connection connection = DbManager.getConnection();
                 PreparedStatement ps = connection.prepareStatement(CHECK_WORKSPACE_OR_PATH_EXIST)
         ) {
-
             ps.setString(1, workspace);
             ps.setString(2, location);
 
-            try(ResultSet resultSet = ps.executeQuery()){
-                while(resultSet.next()){
+            try(ResultSet resultSet = ps.executeQuery()) {
+                while(resultSet.next()) {
                     String locationFromDb = resultSet.getString("location");
-                    String workspaceFromDb =  resultSet.getString("id");
+                    String workspaceFromDb = resultSet.getString("id");
 
                     if(workspaceFromDb.equals(workspace) && locationFromDb.equals(location)){
                         collectionId = resultSet.getString("collection_id");
@@ -159,12 +150,10 @@ public class DbExecutor {
                     }
                 }
             }
-            catch(Exception e) {
-                throw e;
-            }
         }
         catch (SQLException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to check workspace existence for '{}' at '{}'", workspace, location, e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
 
         MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
@@ -173,7 +162,6 @@ public class DbExecutor {
 
     public static void saveWorkspace(String workspace, String location, String collectionId){
         long startNanos = Timer.start();
-
         try (
                 Connection connection = DbManager.getConnection();
                 PreparedStatement ps = connection.prepareStatement(INSERT_INTO_WORKSPACE)
@@ -182,13 +170,12 @@ public class DbExecutor {
             ps.setString(2, location);
             ps.setString(3, collectionId);
             ps.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
-
             ps.executeUpdate();
         }
         catch (SQLException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to save workspace '{}' at '{}'", workspace, location, e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
-
         MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
     }
 
@@ -201,22 +188,20 @@ public class DbExecutor {
                 PreparedStatement ps = connection.prepareStatement(LOAD_ALL_METADATA)
         ) {
             ps.setString(1, workspace);
-            try(ResultSet resultSet = ps.executeQuery()){
-                while(resultSet.next()){
+            try(ResultSet resultSet = ps.executeQuery()) {
+                while(resultSet.next()) {
                     List<String> ids = Arrays.asList(resultSet.getString("ids").split(","));
                     String filePath = resultSet.getString("file_path");
-                    long lastModifiedAt =  resultSet.getLong("last_modified_at");
+                    long lastModifiedAt = resultSet.getLong("last_modified_at");
                     long fileSize = resultSet.getLong("file_size");
 
                     map.put(filePath, new MetadataHolder(ids, lastModifiedAt, fileSize));
                 }
             }
-            catch(Exception e) {
-                throw e;
-            }
         }
         catch (SQLException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to load metadata for workspace '{}'", workspace, e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
 
         MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
@@ -224,31 +209,22 @@ public class DbExecutor {
     }
 
     public static String getWorkspaceLocation(String workspace){
-        String location = null;
         long startNanos = Timer.start();
-
         try (
                 Connection connection = DbManager.getConnection();
                 PreparedStatement ps = connection.prepareStatement(GET_WORKSPACE_LOCATION)
         ) {
-
             ps.setString(1, workspace);
-
-            try(ResultSet resultSet = ps.executeQuery()){
-                if(resultSet.next()){
-                    location = resultSet.getString("location");
-                }
-            }
-            catch(Exception e) {
-                throw e;
+            try(ResultSet resultSet = ps.executeQuery()) {
+                String location = resultSet.next() ? resultSet.getString("location") : null;
+                MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+                return location;
             }
         }
         catch (SQLException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to read location for workspace '{}'", workspace, e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
-
-        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
-        return location;
     }
 
     private static void executeBatch(String sql, List<List<Object>> list, BatchAdder batchAdder){
@@ -267,13 +243,14 @@ public class DbExecutor {
                 ps.executeBatch();
                 connection.commit();
             }
-            catch(Exception e) {
+            catch(SQLException e) {
                 connection.rollback();
                 throw e;
             }
         }
         catch (SQLException e) {
-            throw new RuntimeException(e);
+            log.error("Failed to execute batch SQL of {} rows", list.size(), e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
 
         MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));

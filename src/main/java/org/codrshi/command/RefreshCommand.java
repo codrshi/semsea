@@ -1,6 +1,7 @@
 package org.codrshi.command;
 
 import org.codrshi.config.ConfigManager;
+import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.service.IORefreshingService;
@@ -11,7 +12,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
 
-import java.io.IOException;
 import java.util.Map;
 
 @Command(
@@ -37,13 +37,9 @@ public class RefreshCommand implements Runnable {
 
         String workspace = ConfigManager.getConfig().getWorkspace();
         if(workspace == null){
-            TerminalRenderer.println();
-            TerminalRenderer.println("  %s no workspace is currently attached.",
-                    TerminalRenderer.red("x"));
-            TerminalRenderer.println("  %s",
-                    TerminalRenderer.dim("Run 'semsea attach <workspace> --path <dir>' first."));
-            TerminalRenderer.println();
-            return;
+            throw new SemseaException(
+                    "No workspace is currently attached.",
+                    "Run 'semsea attach <workspace> --path <dir>' first.");
         }
 
         String path = DbExecutor.getWorkspaceLocation(workspace);
@@ -56,16 +52,7 @@ public class RefreshCommand implements Runnable {
                 TerminalRenderer.bold("Path:     "),
                 TerminalRenderer.dim(path));
 
-        try {
-            ioRefreshingService.serialize(path);
-        } catch (IOException e) {
-            TerminalRenderer.println();
-            TerminalRenderer.println("  %s failed to refresh workspace %s",
-                    TerminalRenderer.red("x"),
-                    TerminalRenderer.bold(workspace));
-            TerminalRenderer.println();
-            throw new RuntimeException(e);
-        }
+        ioRefreshingService.serialize(path);
 
         MetricCollector.print("REFRESH_COMMAND");
     }

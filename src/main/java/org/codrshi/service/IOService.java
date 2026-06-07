@@ -3,6 +3,7 @@ package org.codrshi.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.metric.MetricType;
 import org.codrshi.metric.Timer;
@@ -27,11 +28,9 @@ public abstract class IOService {
         dbBatchService = new DbBatchService();
     }
 
-    public void serialize(String path) throws IOException {
+    public void serialize(String path) {
         long startNanos = Timer.start();
         Path projectPath = Path.of(path);
-
-        log.debug("Resolved path from {} to {}", projectPath.toString(), projectPath.toRealPath());
 
         ProgressRenderer.get().begin(getProgressTitle());
 
@@ -60,10 +59,16 @@ public abstract class IOService {
                         return FileVisitResult.CONTINUE;
                     }
 
-                    long startNanos = Timer.start();
+                    long fileStartNanos = Timer.start();
                     processFile(projectPath, file, fileType);
-                    MetricCollector.record(MetricType.FILE_PROCESSING, Timer.stop(startNanos));
+                    MetricCollector.record(MetricType.FILE_PROCESSING, Timer.stop(fileStartNanos));
 
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                    log.warn("Could not access file '{}'; skipping", file, exc);
                     return FileVisitResult.CONTINUE;
                 }
             });
@@ -71,9 +76,19 @@ public abstract class IOService {
             flush();
             ProgressRenderer.get().end();
         }
-        catch (RuntimeException | IOException e) {
+        catch (SemseaException e) {
             ProgressRenderer.get().abort();
             throw e;
+        }
+        catch (IOException e) {
+            ProgressRenderer.get().abort();
+            log.error("Failed to walk workspace at '{}'", projectPath, e);
+            throw new SemseaException("Failed to read files from '" + projectPath + "'.", e);
+        }
+        catch (RuntimeException e) {
+            ProgressRenderer.get().abort();
+            log.error("Indexing failed for workspace at '{}'", projectPath, e);
+            throw new SemseaException("Indexing failed.", e);
         }
         finally {
             MetricCollector.record(MetricType.FILE_TRAVERSAL, Timer.stop(startNanos));

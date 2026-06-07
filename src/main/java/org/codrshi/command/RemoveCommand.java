@@ -2,6 +2,7 @@ package org.codrshi.command;
 
 import org.codrshi.api.ChromaClient;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.util.TerminalRenderer;
@@ -33,22 +34,20 @@ public class RemoveCommand implements Runnable {
     public void run() {
         TerminalRenderer.init(commandSpec.commandLine().getOut());
 
-        TerminalRenderer.println();
-
-        if(!DbExecutor.deleteWorkspaceByID(collection)){
-            TerminalRenderer.println("  %s workspace %s does not exist.",
-                    TerminalRenderer.red("x"),
-                    TerminalRenderer.bold(collection));
-            TerminalRenderer.println();
-            return;
+        if(!DbExecutor.deleteWorkspaceByID(collection)) {
+            throw new SemseaException(
+                    "Workspace '" + collection + "' does not exist.",
+                    "Run 'semsea' to list available commands.");
         }
 
         chromaClient.deleteCollection(collection);
+
         String activeWorkspace = ConfigManager.getConfig().getWorkspace();
-        if(activeWorkspace != null && activeWorkspace.equals(collection)){
+        if(activeWorkspace != null && activeWorkspace.equals(collection)) {
             ConfigManager.updateWorkspace(null, null);
         }
 
+        TerminalRenderer.println();
         TerminalRenderer.println("  %s workspace %s removed.",
                 TerminalRenderer.green("+"),
                 TerminalRenderer.bold(collection));

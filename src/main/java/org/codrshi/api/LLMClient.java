@@ -2,6 +2,7 @@ package org.codrshi.api;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricType;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -20,6 +21,8 @@ import java.util.Map;
 // TODO: use virtual threads for slow blocking calls
 public final class LLMClient extends Client{
     private final static Logger log = LogManager.getLogger(LLMClient.class.getName());
+
+    private static final String SERVICE_NAME = "LLM";
 
     private final static int RETRY_COUNTER = 3;
     private final static String BASE_URL  = "http://localhost:11434/v1";
@@ -71,7 +74,7 @@ public final class LLMClient extends Client{
     private final ObjectMapper objectMapper;
 
     public LLMClient() {
-        super();
+        super(SERVICE_NAME);
         objectMapper = JsonMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .propertyNamingStrategy(new PropertyNamingStrategies.NamingBase() {
@@ -110,24 +113,25 @@ public final class LLMClient extends Client{
             HttpResponse<String> response = executePost(requestUrl, requestBody, MetricType.LLM_GENERATE_SUMMARY);
 
             if (response.statusCode() != 200) {
-                throw new RuntimeException("Failed to generate LLM summary: " + response.body());
+                log.error("LLM chat-completions failed: status={} body={}",
+                        response.statusCode(), response.body());
+                throw new SemseaException("LLM service '" + LLM_MODEL + "' returned an unexpected response.");
             }
 
             log.debug("Created LLM summary successfully for {} characters.", fileContents.length());
 
             try {
                 result = extractSummary(response.body(), texts.size());
+                break;
             }
             catch (IllegalStateException | JacksonException e) {
+                log.warn("LLM returned malformed summary (attempt {} of {})", i + 1, RETRY_COUNTER, e);
                 result = null;
-                continue;
             }
-
-            break;
         }
 
         if(result == null) {
-            throw new RuntimeException("Failed to extract summary from response body");
+            throw new SemseaException("LLM service '" + LLM_MODEL + "' could not produce a usable summary after retries.");
         }
 
         return result;
