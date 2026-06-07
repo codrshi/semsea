@@ -5,6 +5,7 @@ import java.nio.ByteOrder;
 import java.util.Base64;
 import java.util.List;
 
+// TODO: encode embeddings before sending to chromaDB to reduce bandwidth
 public class EmbeddingEncoder {
     public static String[] encode(List<List<Double>> embeddings) {
         String[] result = new String[embeddings.size()];

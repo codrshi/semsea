@@ -17,7 +17,7 @@ public class SemseaConfig{
     private Set<String> ignoredDirectories;
     private Set<String> ignoredFiles;
     private Set<String> supportedFiles;
-    private int maxChunkSize;
+    private int llmContextLimit;
     private int batchSize;
     private int limitMultiplier;
 }

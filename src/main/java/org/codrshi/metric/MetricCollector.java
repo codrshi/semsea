@@ -3,11 +3,9 @@ package org.codrshi.metric;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class MetricCollector {
     private static final Logger log = LogManager.getFormatterLogger(MetricCollector.class.getName());
@@ -28,7 +26,7 @@ public class MetricCollector {
         log.debug("%-35s %-12s %-10s %-10s %-10s %s", title, "totalCalls", "totalTime", "avgTime", "maxTime", "p95");
 
         for(Map.Entry<MetricType, MetricStat> metric:  metrics.entrySet()) {
-            List<Long> durations = metric.getValue().getTotalNanos().stream().sorted().collect(Collectors.toList());
+            List<Long> durations = metric.getValue().getTotalNanos().stream().sorted().toList();
 
             if(durations.isEmpty()) {
                 continue;
@@ -38,7 +36,7 @@ public class MetricCollector {
             int p95Index = (int) Math.ceil((95.0 / 100.0) * (totalCalls - 1));
 
             long p95 =  durations.get(p95Index) / (long) 1e6;
-            long totalTime = durations.stream().reduce(0l, (a,b)->a+b)/ (long) 1e9 ;
+            long totalTime = durations.stream().reduce(0L, Long::sum)/ (long) 1e9 ;
             long maxTime = durations.get(totalCalls - 1) / (long) 1e9 ;
             long avgTime = totalTime / totalCalls ;
 

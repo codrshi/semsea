@@ -17,14 +17,6 @@ public class DbExecutor {
             VALUES(?, ?, ?, ?, ?);
             """;
 
-    private static final String UPDATE_FILES_IN_METADATA =
-            """
-            UPDATE metadata
-            SET
-                last_modified_at = ?, file_size = ?
-            WHERE workspace_id = ? AND file_path = ?;
-            """;
-
     private static final String DELETE_FILES_FROM_METADATA =
             """
             DELETE FROM metadata
