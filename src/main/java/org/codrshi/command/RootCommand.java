@@ -18,7 +18,8 @@ import picocli.CommandLine.Spec;
                 SwitchCommand.class,
                 FindCommand.class,
                 RefreshCommand.class,
-                RemoveCommand.class
+                RemoveCommand.class,
+                HeartbeatCommand.class
         }
 )
 public class RootCommand implements Runnable {
@@ -52,6 +53,7 @@ public class RootCommand implements Runnable {
         printOption ("--limit <n>",            "Max number of results to show (default: 5)");
         printCommand("refresh",                "Re-index changed and removed files in the active workspace");
         printCommand("remove <workspace>...",  "Delete one or more workspaces from the index");
+        printCommand("heartbeat",              "Check connectivity to SQLite, ChromaDB, and Ollama");
         TerminalRenderer.println();
 
         TerminalRenderer.println("  %s", TerminalRenderer.bold("Examples"));

@@ -48,6 +48,17 @@ public abstract sealed class Client permits ChromaClient, OllamaClient, LLMClien
         return execute(request, metricType);
     }
 
+    protected HttpResponse<String> executeGet(String url, MetricType metricType) {
+
+        HttpRequest request = HttpRequest
+                .newBuilder(URI.create(url))
+                .header("Content-type", "application/json")
+                .GET()
+                .build();
+
+        return execute(request, metricType);
+    }
+
 
     private HttpResponse<String> execute(HttpRequest request, MetricType metricType) {
         long startNanos = Timer.start();

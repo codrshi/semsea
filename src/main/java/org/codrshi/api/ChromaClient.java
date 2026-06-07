@@ -17,7 +17,8 @@ public final class ChromaClient extends Client {
 
     private static final String SERVICE_NAME = "ChromaDB";
 
-    private static final String BASE_URL = "http://localhost:8000/api/v2";
+    public  static final String BASE_URL = "http://localhost:8000/api/v2";
+    private static final String HEARTBEAT = "/heartbeat";
     private static final String DELETE_COLLECTION = "/tenants/default_tenant/databases/default_database/collections/%s";
     private static final String GET_OR_CREATE_COLLECTION = "/tenants/default_tenant/databases/default_database/collections";
     private static final String SAVE_EMBEDDINGS = "/tenants/default_tenant/databases/default_database/collections/%s/add";
@@ -31,6 +32,16 @@ public final class ChromaClient extends Client {
         objectMapper = JsonMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .build();
+    }
+
+    public void heartbeat() {
+        log.debug("Pinging ChromaDB heartbeat endpoint");
+        HttpResponse<String> response = executeGet(BASE_URL + HEARTBEAT, MetricType.CHROMA_HEARTBEAT);
+        if(response.statusCode() != 200) {
+            log.error("ChromaDB heartbeat failed: status={} body={}",
+                    response.statusCode(), response.body());
+            throw new SemseaException("ChromaDB heartbeat returned status " + response.statusCode() + ".");
+        }
     }
 
     /**

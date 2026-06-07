@@ -25,9 +25,9 @@ public final class LLMClient extends Client{
     private static final String SERVICE_NAME = "LLM";
 
     private final static int RETRY_COUNTER = 3;
-    private final static String BASE_URL  = "http://localhost:11434/v1";
+    public  final static String BASE_URL  = "http://localhost:11434/v1";
+    public  final static String LLM_MODEL = "qwen2.5-coder:3b";
     private final static String CHAT_COMPLETIONS = "/chat/completions";
-    private final static String LLM_MODEL = "qwen2.5-coder:3b";
     private static final String SYSTEM_PROMPT =
             """
             You are a semantic code indexing engine.
