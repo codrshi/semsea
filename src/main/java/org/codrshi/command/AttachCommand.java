@@ -10,22 +10,29 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 // TODO: exit automatically when user changes branch of project (rebouncing)
 // TODO: use WatcherService API to continously monitor for system changes.
-@Command(name = "attach")
+@Command(
+        name = "attach",
+        description = "Index a workspace into the vector store.",
+        mixinStandardHelpOptions = true
+)
 public class AttachCommand implements Runnable {
 
     @Spec
     CommandSpec commandSpec;
 
-    @Parameters(index = "0")
+    @Parameters(index = "0", paramLabel = "<workspace>", description = "Workspace identifier to attach.")
     private String collection;
 
-    @Option(names = "--clear", defaultValue = "false")
+    @Option(names = "--clear", defaultValue = "false",
+            description = "Remove any existing index at --path before attaching.")
     private boolean clear;
 
-    @Option(names = "--path", defaultValue = "")
+    @Option(names = "--path", defaultValue = "",
+            description = "Workspace directory (default: current directory).")
     private String path;
 
     private final MountService mountService;
@@ -39,18 +46,41 @@ public class AttachCommand implements Runnable {
 
         TerminalRenderer.init(commandSpec.commandLine().getOut());
 
-        if(clear) {
-            mountService.unmount(path);
-            TerminalRenderer.print("Cleared [%s] from registry.\n", path);
+        String absolutePath;
+        try {
+            absolutePath = Path.of(path).toRealPath().toString();
+        }
+        catch (IOException e) {
+            TerminalRenderer.println();
+            TerminalRenderer.println("  %s could not resolve path %s",
+                    TerminalRenderer.red("✗"),
+                    TerminalRenderer.dim(path.isEmpty() ? "<current directory>" : path));
+            TerminalRenderer.println();
+            return;
         }
 
-        TerminalRenderer.print("Mounting %s into registry.\n", collection);
+        TerminalRenderer.println();
+        TerminalRenderer.println("  %s %s",
+                TerminalRenderer.bold("Workspace:"),
+                TerminalRenderer.cyan(collection));
+        TerminalRenderer.println("  %s %s",
+                TerminalRenderer.bold("Path:     "),
+                TerminalRenderer.dim(absolutePath));
+
+        if(clear) {
+            mountService.unmount(path);
+            TerminalRenderer.println("  %s cleared previous index at this path",
+                    TerminalRenderer.gray("⊖"));
+        }
 
         try {
             mountService.mount(collection, path);
         } catch (IOException e) {
-            //throw new RuntimeException(e);
-            TerminalRenderer.print("Failed to mount %s from registry.\n", collection);
+            TerminalRenderer.println();
+            TerminalRenderer.println("  %s failed to attach workspace %s",
+                    TerminalRenderer.red("✗"),
+                    TerminalRenderer.bold(collection));
+            TerminalRenderer.println();
         }
 
         MetricCollector.print("ATTACH_COMMAND");

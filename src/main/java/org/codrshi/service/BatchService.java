@@ -4,6 +4,7 @@ import org.codrshi.api.ChromaClient;
 import org.codrshi.api.LLMClient;
 import org.codrshi.api.OllamaClient;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.util.ProgressRenderer;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -32,6 +33,11 @@ public class BatchService {
     public List<String> saveChunks(String text, Path relativePath, Map<String,Object> metadata) {
 
         List<String> uuids = new ArrayList<>();
+
+        int totalChunks = (text.length() <= MAX_LLM_CHARS)
+                ? 1
+                : (int) Math.ceil((double) text.length() / MAX_LLM_CHARS);
+        ProgressRenderer.get().register(relativePath, totalChunks);
 
         if(text.length() <= llmBatchContext.availableChars()){
             uuids.add(UUID.randomUUID().toString());
@@ -70,6 +76,10 @@ public class BatchService {
 
         chromaClient.saveEmbedding(collectionId, embeddingBatchContext.ids, embeddingBatchContext.documents, embeddings, embeddingBatchContext.metadatas);
 
+        for(String document : embeddingBatchContext.documents) {
+            ProgressRenderer.get().markStored(document);
+        }
+
         embeddingBatchContext = new EmbeddingBatchContext();
     }
 
@@ -90,6 +100,7 @@ public class BatchService {
         List<String> summaries = llmClient.generateSummary(llmBatchContext.texts, llmBatchContext.relativePath);
 
         for(int i=0; i<summaries.size(); i++){
+            ProgressRenderer.get().markSummarized(llmBatchContext.relativePath.get(i));
             addToEmbeddingBatch(summaries.get(i), llmBatchContext.relativePath.get(i), llmBatchContext.ids.get(i), llmBatchContext.metadatas.get(i));
         }
 

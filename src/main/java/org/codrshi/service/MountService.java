@@ -2,9 +2,6 @@ package org.codrshi.service;
 
 import org.codrshi.api.ChromaClient;
 import org.codrshi.config.ConfigManager;
-import org.codrshi.metric.MetricCollector;
-import org.codrshi.metric.MetricType;
-import org.codrshi.metric.Timer;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.util.TerminalRenderer;
 
@@ -41,12 +38,18 @@ public class MountService {
 
         if(isPresent.get(0)!=null){
             ConfigManager.updateWorkspace(workspace,(String) isPresent.get(0));
-            TerminalRenderer.print("Successfully mounted %s. Currently pointing to %s.\n", workspace, workspace);
+            TerminalRenderer.println("  %s workspace %s is already attached at %s",
+                    TerminalRenderer.green("✔"),
+                    TerminalRenderer.bold(workspace),
+                    TerminalRenderer.dim(absolutePath));
             return;
         }
 
         if((boolean) isPresent.get(1)){
-            TerminalRenderer.print("Failed to mount. Workspace %s or path [%s] already registered.\n", workspace, absolutePath);
+            TerminalRenderer.println("  %s workspace %s or path %s is already registered.",
+                    TerminalRenderer.red("✗"),
+                    TerminalRenderer.bold(workspace),
+                    TerminalRenderer.dim(absolutePath));
             return;
         }
 

@@ -2,8 +2,6 @@ package org.codrshi.command;
 
 import org.codrshi.config.ConfigManager;
 import org.codrshi.metric.MetricCollector;
-import org.codrshi.metric.MetricType;
-import org.codrshi.metric.Timer;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.service.IORefreshingService;
 import org.codrshi.service.IOService;
@@ -17,7 +15,9 @@ import java.io.IOException;
 import java.util.Map;
 
 @Command(
-        name = "refresh"
+        name = "refresh",
+        description = "Re-index changed and removed files in the active workspace.",
+        mixinStandardHelpOptions = true
 )
 public class RefreshCommand implements Runnable {
 
@@ -37,16 +37,33 @@ public class RefreshCommand implements Runnable {
 
         String workspace = ConfigManager.getConfig().getWorkspace();
         if(workspace == null){
-            TerminalRenderer.print("Not attached to any workspace.");
+            TerminalRenderer.println();
+            TerminalRenderer.println("  %s no workspace is currently attached.",
+                    TerminalRenderer.red("✗"));
+            TerminalRenderer.println("  %s",
+                    TerminalRenderer.dim("Run 'semsea attach <workspace> --path <dir>' first."));
+            TerminalRenderer.println();
             return;
         }
 
         String path = DbExecutor.getWorkspaceLocation(workspace);
 
+        TerminalRenderer.println();
+        TerminalRenderer.println("  %s %s",
+                TerminalRenderer.bold("Workspace:"),
+                TerminalRenderer.cyan(workspace));
+        TerminalRenderer.println("  %s %s",
+                TerminalRenderer.bold("Path:     "),
+                TerminalRenderer.dim(path));
+
         try {
             ioRefreshingService.serialize(path);
         } catch (IOException e) {
-            TerminalRenderer.print("Failed to refresh workspace.");
+            TerminalRenderer.println();
+            TerminalRenderer.println("  %s failed to refresh workspace %s",
+                    TerminalRenderer.red("✗"),
+                    TerminalRenderer.bold(workspace));
+            TerminalRenderer.println();
             throw new RuntimeException(e);
         }
 
