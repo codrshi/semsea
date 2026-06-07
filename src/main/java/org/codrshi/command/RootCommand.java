@@ -13,9 +13,10 @@ import picocli.CommandLine.Spec;
         description = "Semantic codebase search powered by a local LLM and vector store.",
         subcommands = {
                 AttachCommand.class,
+                StatusCommand.class,
                 FindCommand.class,
-                RemoveCommand.class,
-                RefreshCommand.class
+                RefreshCommand.class,
+                RemoveCommand.class
         }
 )
 public class RootCommand implements Runnable {
@@ -39,18 +40,21 @@ public class RootCommand implements Runnable {
         TerminalRenderer.println();
 
         TerminalRenderer.println("  %s", TerminalRenderer.bold("Commands"));
-        printCommand("attach <workspace>",  "Index a workspace into the vector store");
-        printOption ("--path <dir>",        "Workspace directory (default: current directory)");
-        printOption ("--clear",             "Remove any existing index at --path before attaching");
-        printCommand("find <query>",        "Semantically search files in the active workspace");
-        printOption ("--limit <n>",         "Max number of results to show (default: 5)");
-        printCommand("refresh",             "Re-index changed and removed files in the active workspace");
+        printCommand("attach <workspace>",     "Index a workspace into the vector store");
+        printOption ("--path <dir>",           "Workspace directory (default: current directory)");
+        printOption ("--clear",                "Remove any existing index at --path before attaching");
+        printCommand("status",                 "Show the active workspace and its index status");
+        printCommand("find <query>",           "Semantically search files in the active workspace");
+        printOption ("--limit <n>",            "Max number of results to show (default: 5)");
+        printCommand("refresh",                "Re-index changed and removed files in the active workspace");
         printCommand("remove <workspace>...",  "Delete one or more workspaces from the index");
         TerminalRenderer.println();
 
         TerminalRenderer.println("  %s", TerminalRenderer.bold("Examples"));
         TerminalRenderer.println("    %s",
                 TerminalRenderer.dim("$ ") + "semsea attach myproject --path ./src");
+        TerminalRenderer.println("    %s",
+                TerminalRenderer.dim("$ ") + "semsea status");
         TerminalRenderer.println("    %s",
                 TerminalRenderer.dim("$ ") + "semsea find \"where is the database config initialized\"");
         TerminalRenderer.println("    %s",

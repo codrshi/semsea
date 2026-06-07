@@ -8,6 +8,7 @@ import org.codrshi.metric.MetricCollector;
 import org.codrshi.metric.MetricType;
 import org.codrshi.metric.Timer;
 import org.codrshi.util.MetadataHolder;
+import org.codrshi.util.WorkspaceDetails;
 
 import java.sql.*;
 import java.util.*;
@@ -72,6 +73,12 @@ public class DbExecutor {
     private static final String GET_WORKSPACE_LOCATION =
             """
             SELECT location FROM workspace
+            WHERE id = ?;
+            """;
+
+    private static final String GET_WORKSPACE_DETAILS =
+            """
+            SELECT location, last_refresh FROM workspace
             WHERE id = ?;
             """;
 
@@ -262,6 +269,36 @@ public class DbExecutor {
         }
         catch (SQLException e) {
             log.error("Failed to read location for workspace '{}'", workspace, e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
+        }
+    }
+
+    public static WorkspaceDetails getWorkspaceDetails(String workspace){
+        long startNanos = Timer.start();
+        try (
+                Connection connection = DbManager.getConnection();
+                PreparedStatement ps = connection.prepareStatement(GET_WORKSPACE_DETAILS)
+        ) {
+            ps.setString(1, workspace);
+            try(ResultSet resultSet = ps.executeQuery()) {
+                WorkspaceDetails details;
+                if(resultSet.next()) {
+                    details = new WorkspaceDetails(
+                            resultSet.getString("location"),
+                            resultSet.getTimestamp("last_refresh"));
+                    log.debug("Resolved details for workspace '{}': location='{}' lastRefresh={}",
+                            workspace, details.location(), details.lastRefresh());
+                }
+                else {
+                    details = null;
+                    log.debug("No workspace row found for '{}'", workspace);
+                }
+                MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+                return details;
+            }
+        }
+        catch (SQLException e) {
+            log.error("Failed to read details for workspace '{}'", workspace, e);
             throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
     }
