@@ -39,7 +39,7 @@ public class RefreshCommand implements Runnable {
         if(workspace == null){
             TerminalRenderer.println();
             TerminalRenderer.println("  %s no workspace is currently attached.",
-                    TerminalRenderer.red("✗"));
+                    TerminalRenderer.red("x"));
             TerminalRenderer.println("  %s",
                     TerminalRenderer.dim("Run 'semsea attach <workspace> --path <dir>' first."));
             TerminalRenderer.println();
@@ -61,7 +61,7 @@ public class RefreshCommand implements Runnable {
         } catch (IOException e) {
             TerminalRenderer.println();
             TerminalRenderer.println("  %s failed to refresh workspace %s",
-                    TerminalRenderer.red("✗"),
+                    TerminalRenderer.red("x"),
                     TerminalRenderer.bold(workspace));
             TerminalRenderer.println();
             throw new RuntimeException(e);

@@ -15,8 +15,18 @@ import java.util.Map;
  *
  * Completed files scroll above the live panel as static checkmark lines,
  * while in-flight files keep updating in place at the bottom.
+ *
+ * Uses ASCII glyphs (and ANSI colors) so output renders correctly in
+ * legacy Windows consoles (cmd, PowerShell, git-bash) whose active code
+ * page may not be UTF-8.
  */
 public class ProgressRenderer {
+
+    private static final String SEPARATOR = "-".repeat(60);
+    private static final String GLYPH_ACTIVE    = "*";
+    private static final String GLYPH_DONE      = "+";
+    private static final String GLYPH_FAILED    = "x";
+    private static final String GLYPH_REMOVED   = "-";
 
     private static final ProgressRenderer INSTANCE = new ProgressRenderer();
 
@@ -31,12 +41,10 @@ public class ProgressRenderer {
         int summarizedChunks;
         int storedChunks;
         State state;
-        final long startNanos;
 
         FileProgress(int totalChunks) {
             this.totalChunks = Math.max(1, totalChunks);
             this.state = State.PENDING_SUMMARY;
-            this.startNanos = System.nanoTime();
         }
     }
 
@@ -58,7 +66,7 @@ public class ProgressRenderer {
         TerminalRenderer.hideCursor();
         TerminalRenderer.println();
         TerminalRenderer.println("  %s", TerminalRenderer.bold(title));
-        TerminalRenderer.println("  %s", TerminalRenderer.dim("─".repeat(60)));
+        TerminalRenderer.println("  %s", TerminalRenderer.dim(SEPARATOR));
     }
 
     public synchronized void register(Path relativePath, int chunkCount) {
@@ -100,14 +108,14 @@ public class ProgressRenderer {
     public synchronized void noteRemoval(String filePath) {
         if(!active) {
             TerminalRenderer.println("  %s %s %s",
-                    TerminalRenderer.gray("⊖"),
+                    TerminalRenderer.gray(GLYPH_REMOVED),
                     truncate(filePath, 55),
                     TerminalRenderer.dim("(removed)"));
             return;
         }
         clearPanel();
         TerminalRenderer.println("  %s %s %s",
-                TerminalRenderer.gray("⊖"),
+                TerminalRenderer.gray(GLYPH_REMOVED),
                 truncate(filePath, 55),
                 TerminalRenderer.dim("(removed)"));
         totalRemoved++;
@@ -123,7 +131,7 @@ public class ProgressRenderer {
         if(!files.isEmpty()) {
             for(Map.Entry<String, FileProgress> e : files.entrySet()) {
                 TerminalRenderer.println("  %s %s %s",
-                        TerminalRenderer.red("✗"),
+                        TerminalRenderer.red(GLYPH_FAILED),
                         truncate(e.getKey(), 55),
                         TerminalRenderer.dim("(incomplete)"));
             }
@@ -131,15 +139,15 @@ public class ProgressRenderer {
         }
 
         long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
-        TerminalRenderer.println("  %s", TerminalRenderer.dim("─".repeat(60)));
+        TerminalRenderer.println("  %s", TerminalRenderer.dim(SEPARATOR));
 
         StringBuilder summary = new StringBuilder("  ");
-        summary.append(TerminalRenderer.green("✔ "));
+        summary.append(TerminalRenderer.green(GLYPH_DONE)).append(" ");
         summary.append(totalCompleted).append(" indexed");
         if(totalRemoved > 0) {
-            summary.append(TerminalRenderer.dim(", ")).append(totalRemoved).append(" removed");
+            summary.append(", ").append(totalRemoved).append(" removed");
         }
-        summary.append(TerminalRenderer.dim(String.format("  ·  %.1fs", elapsedMs / 1000.0)));
+        summary.append(TerminalRenderer.dim(String.format(" in %.1fs", elapsedMs / 1000.0)));
         TerminalRenderer.println("%s", summary.toString());
         TerminalRenderer.println();
 
@@ -177,7 +185,7 @@ public class ProgressRenderer {
                     continue;
             }
             sb.append("  ")
-              .append(TerminalRenderer.color(color, "● "))
+              .append(TerminalRenderer.color(color, GLYPH_ACTIVE + " "))
               .append(TerminalRenderer.dim("[" + label + "]"))
               .append("  ")
               .append(truncate(e.getKey(), 55))
@@ -194,11 +202,9 @@ public class ProgressRenderer {
         while(iter.hasNext()) {
             Map.Entry<String, FileProgress> e = iter.next();
             if(e.getValue().state == State.COMPLETED) {
-                double secs = (System.nanoTime() - e.getValue().startNanos) / 1e9;
                 sb.append("  ")
-                  .append(TerminalRenderer.green("✓ "))
+                  .append(TerminalRenderer.green(GLYPH_DONE + " "))
                   .append(truncate(e.getKey(), 55))
-                  .append(TerminalRenderer.dim(String.format("  (%.1fs)", secs)))
                   .append('\n');
                 iter.remove();
                 totalCompleted++;
@@ -218,6 +224,6 @@ public class ProgressRenderer {
 
     private static String truncate(String s, int max) {
         if(s.length() <= max) return s;
-        return "…" + s.substring(s.length() - max + 1);
+        return "..." + s.substring(s.length() - max + 3);
     }
 }

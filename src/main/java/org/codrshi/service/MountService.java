@@ -39,7 +39,7 @@ public class MountService {
         if(isPresent.get(0)!=null){
             ConfigManager.updateWorkspace(workspace,(String) isPresent.get(0));
             TerminalRenderer.println("  %s workspace %s is already attached at %s",
-                    TerminalRenderer.green("✔"),
+                    TerminalRenderer.green("+"),
                     TerminalRenderer.bold(workspace),
                     TerminalRenderer.dim(absolutePath));
             return;
@@ -47,7 +47,7 @@ public class MountService {
 
         if((boolean) isPresent.get(1)){
             TerminalRenderer.println("  %s workspace %s or path %s is already registered.",
-                    TerminalRenderer.red("✗"),
+                    TerminalRenderer.red("x"),
                     TerminalRenderer.bold(workspace),
                     TerminalRenderer.dim(absolutePath));
             return;

@@ -37,7 +37,7 @@ public class RemoveCommand implements Runnable {
 
         if(!DbExecutor.deleteWorkspaceByID(collection)){
             TerminalRenderer.println("  %s workspace %s does not exist.",
-                    TerminalRenderer.red("✗"),
+                    TerminalRenderer.red("x"),
                     TerminalRenderer.bold(collection));
             TerminalRenderer.println();
             return;
@@ -50,7 +50,7 @@ public class RemoveCommand implements Runnable {
         }
 
         TerminalRenderer.println("  %s workspace %s removed.",
-                TerminalRenderer.green("✔"),
+                TerminalRenderer.green("+"),
                 TerminalRenderer.bold(collection));
         TerminalRenderer.println();
 

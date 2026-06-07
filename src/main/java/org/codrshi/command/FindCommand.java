@@ -46,7 +46,7 @@ public class FindCommand implements Callable<Integer> {
         if(workspace == null || ConfigManager.getConfig().getCollectionId() == null) {
             TerminalRenderer.println();
             TerminalRenderer.println("  %s no workspace is currently attached.",
-                    TerminalRenderer.red("✗"));
+                    TerminalRenderer.red("x"));
             TerminalRenderer.println("  %s",
                     TerminalRenderer.dim("Run 'semsea attach <workspace> --path <dir>' first."));
             TerminalRenderer.println();
@@ -66,7 +66,7 @@ public class FindCommand implements Callable<Integer> {
 
         if(result.isEmpty()) {
             TerminalRenderer.println("  %s no matching files found.",
-                    TerminalRenderer.dim("·"));
+                    TerminalRenderer.dim("-"));
             TerminalRenderer.println();
             MetricCollector.print("FIND_COMMAND");
             return 0;
@@ -94,9 +94,9 @@ public class FindCommand implements Callable<Integer> {
                 TerminalRenderer.bold(pad("File", FILE_COLUMN_WIDTH)),
                 TerminalRenderer.bold("Last Modified"));
         TerminalRenderer.println("  %s  %s  %s",
-                TerminalRenderer.dim("──"),
-                TerminalRenderer.dim("─".repeat(FILE_COLUMN_WIDTH)),
-                TerminalRenderer.dim("─".repeat(24)));
+                TerminalRenderer.dim("--"),
+                TerminalRenderer.dim("-".repeat(FILE_COLUMN_WIDTH)),
+                TerminalRenderer.dim("-".repeat(24)));
     }
 
     private static String pad(String s, int width) {
@@ -106,6 +106,6 @@ public class FindCommand implements Callable<Integer> {
 
     private static String truncate(String s, int max) {
         if(s.length() <= max) return pad(s, max);
-        return "…" + s.substring(s.length() - max + 1);
+        return "..." + s.substring(s.length() - max + 3);
     }
 }

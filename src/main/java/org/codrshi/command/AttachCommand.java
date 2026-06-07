@@ -53,7 +53,7 @@ public class AttachCommand implements Runnable {
         catch (IOException e) {
             TerminalRenderer.println();
             TerminalRenderer.println("  %s could not resolve path %s",
-                    TerminalRenderer.red("✗"),
+                    TerminalRenderer.red("x"),
                     TerminalRenderer.dim(path.isEmpty() ? "<current directory>" : path));
             TerminalRenderer.println();
             return;
@@ -70,7 +70,7 @@ public class AttachCommand implements Runnable {
         if(clear) {
             mountService.unmount(path);
             TerminalRenderer.println("  %s cleared previous index at this path",
-                    TerminalRenderer.gray("⊖"));
+                    TerminalRenderer.gray("-"));
         }
 
         try {
@@ -78,7 +78,7 @@ public class AttachCommand implements Runnable {
         } catch (IOException e) {
             TerminalRenderer.println();
             TerminalRenderer.println("  %s failed to attach workspace %s",
-                    TerminalRenderer.red("✗"),
+                    TerminalRenderer.red("x"),
                     TerminalRenderer.bold(collection));
             TerminalRenderer.println();
         }
