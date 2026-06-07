@@ -15,6 +15,7 @@ import picocli.CommandLine.Spec;
                 AttachCommand.class,
                 StatusCommand.class,
                 ListCommand.class,
+                SwitchCommand.class,
                 FindCommand.class,
                 RefreshCommand.class,
                 RemoveCommand.class
@@ -46,6 +47,7 @@ public class RootCommand implements Runnable {
         printOption ("--clear",                "Remove any existing index at --path before attaching");
         printCommand("status",                 "Show the active workspace and its index status");
         printCommand("list",                   "List all workspaces with their path and last refreshed time");
+        printCommand("switch <workspace>",     "Switch the active workspace");
         printCommand("find <query>",           "Semantically search files in the active workspace");
         printOption ("--limit <n>",            "Max number of results to show (default: 5)");
         printCommand("refresh",                "Re-index changed and removed files in the active workspace");

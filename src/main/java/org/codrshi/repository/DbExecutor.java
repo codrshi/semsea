@@ -78,13 +78,13 @@ public class DbExecutor {
 
     private static final String GET_WORKSPACE_DETAILS =
             """
-            SELECT id, location, last_refresh FROM workspace
+            SELECT id, location, collection_id, last_refresh FROM workspace
             WHERE id = ?;
             """;
 
     private static final String LIST_ALL_WORKSPACES =
             """
-            SELECT id, location, last_refresh FROM workspace
+            SELECT id, location, collection_id, last_refresh FROM workspace
             ORDER BY last_refresh DESC;
             """;
 
@@ -332,6 +332,7 @@ public class DbExecutor {
         return new WorkspaceDetails(
                 rs.getString("id"),
                 rs.getString("location"),
+                rs.getString("collection_id"),
                 rs.getTimestamp("last_refresh"));
     }
 
