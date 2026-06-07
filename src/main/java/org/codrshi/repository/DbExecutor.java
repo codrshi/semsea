@@ -56,6 +56,13 @@ public class DbExecutor {
             VALUES(?, ?, ?, ?);
             """;
 
+    private static final String UPDATE_WORKSPACE_LAST_REFRESH =
+            """
+            UPDATE workspace
+            SET last_refresh = ?
+            WHERE id = ?;
+            """;
+
     private static final String LOAD_ALL_METADATA =
             """
             SELECT ids, file_path, last_modified_at, file_size FROM metadata
@@ -180,6 +187,30 @@ public class DbExecutor {
         }
         catch (SQLException e) {
             log.error("Failed to save workspace '{}' at '{}'", workspace, location, e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
+        }
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+    }
+
+    public static void updateLastRefresh(String workspace){
+        long startNanos = Timer.start();
+        try (
+                Connection connection = DbManager.getConnection();
+                PreparedStatement ps = connection.prepareStatement(UPDATE_WORKSPACE_LAST_REFRESH)
+        ) {
+            ps.setTimestamp(1, new Timestamp(System.currentTimeMillis()));
+            ps.setString(2, workspace);
+            int rows = ps.executeUpdate();
+
+            if(rows == 0) {
+                log.warn("No workspace row found while updating last_refresh for '{}'", workspace);
+            }
+            else {
+                log.debug("Updated last_refresh for workspace '{}' (rowsAffected={})", workspace, rows);
+            }
+        }
+        catch (SQLException e) {
+            log.error("Failed to update last_refresh for workspace '{}'", workspace, e);
             throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
         MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));

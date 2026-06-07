@@ -59,6 +59,8 @@ public class RefreshCommand implements Runnable {
                 TerminalRenderer.dim(path));
 
         ioRefreshingService.serialize(path);
+        DbExecutor.updateLastRefresh(workspace);
+        log.info("Updated last_refresh timestamp for workspace '{}'", workspace);
 
         MetricCollector.print("REFRESH_COMMAND");
         log.info("'refresh' completed for workspace='{}'", workspace);
