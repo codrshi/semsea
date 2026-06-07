@@ -59,7 +59,7 @@ public class StatusCommand implements Runnable {
         TerminalRenderer.println("  %s no workspace is currently attached.",
                 TerminalRenderer.dim("-"));
         TerminalRenderer.println("  %s",
-                TerminalRenderer.dim("Run 'semsea attach <workspace> --path <dir>' to attach one."));
+                TerminalRenderer.dim("Run 'semsea attach <workspace> --path <dir>' or 'semsea switch <workspace>' to attach one."));
         TerminalRenderer.println();
     }
 
