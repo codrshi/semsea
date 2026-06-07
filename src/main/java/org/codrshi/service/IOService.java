@@ -32,6 +32,7 @@ public abstract class IOService {
         long startNanos = Timer.start();
         Path projectPath = Path.of(path);
 
+        log.info("{} started at '{}'", getProgressTitle(), projectPath);
         ProgressRenderer.get().begin(getProgressTitle());
 
         try {
@@ -75,6 +76,8 @@ public abstract class IOService {
 
             flush();
             ProgressRenderer.get().end();
+            log.info("{} finished at '{}' in {} ms",
+                    getProgressTitle(), projectPath, Timer.stop(startNanos) / 1_000_000);
         }
         catch (SemseaException e) {
             ProgressRenderer.get().abort();

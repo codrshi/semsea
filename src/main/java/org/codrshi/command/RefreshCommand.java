@@ -1,5 +1,7 @@
 package org.codrshi.command;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codrshi.config.ConfigManager;
 import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
@@ -21,6 +23,8 @@ import java.util.Map;
 )
 public class RefreshCommand implements Runnable {
 
+    private static final Logger log = LogManager.getLogger(RefreshCommand.class);
+
     @Spec
     CommandSpec commandSpec;
 
@@ -34,6 +38,7 @@ public class RefreshCommand implements Runnable {
     @Override
     public void run() {
         TerminalRenderer.init(commandSpec.commandLine().getOut());
+        log.info("'refresh' invoked");
 
         String workspace = ConfigManager.getConfig().getWorkspace();
         if(workspace == null){
@@ -43,6 +48,7 @@ public class RefreshCommand implements Runnable {
         }
 
         String path = DbExecutor.getWorkspaceLocation(workspace);
+        log.info("Refreshing workspace='{}' at path='{}'", workspace, path);
 
         TerminalRenderer.println();
         TerminalRenderer.println("  %s %s",
@@ -55,5 +61,6 @@ public class RefreshCommand implements Runnable {
         ioRefreshingService.serialize(path);
 
         MetricCollector.print("REFRESH_COMMAND");
+        log.info("'refresh' completed for workspace='{}'", workspace);
     }
 }

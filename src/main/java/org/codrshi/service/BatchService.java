@@ -1,5 +1,7 @@
 package org.codrshi.service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codrshi.api.ChromaClient;
 import org.codrshi.api.LLMClient;
 import org.codrshi.api.OllamaClient;
@@ -10,6 +12,8 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class BatchService {
+
+    private static final Logger log = LogManager.getLogger(BatchService.class);
 
     private static final int BATCH_SIZE = ConfigManager.getConfig().getBatchSize();
     private static final int MAX_LLM_CHARS = ConfigManager.getConfig().getLlmContextLimit();
@@ -70,6 +74,9 @@ public class BatchService {
             return;
         }
 
+        log.debug("Flushing embedding batch: {} document(s) to vector store",
+                embeddingBatchContext.count);
+
         String collectionId = ConfigManager.getConfig().getCollectionId();
 
         List<List<Float>> embeddings = ollamaClient.createEmbeddings(embeddingBatchContext.texts);
@@ -88,6 +95,7 @@ public class BatchService {
             return;
         }
 
+        log.debug("Flushing delete batch: {} embedding id(s)", embeddingsToDelete.size());
         chromaClient.deleteEmbeddings(ConfigManager.getConfig().getCollectionId(), embeddingsToDelete);
         embeddingsToDelete = new ArrayList<>();
     }
@@ -96,6 +104,9 @@ public class BatchService {
         if(llmBatchContext.texts.isEmpty()){
             return;
         }
+
+        log.debug("Flushing LLM batch: {} chunk(s), {} chars total",
+                llmBatchContext.texts.size(), llmBatchContext.totalChars);
 
         List<String> summaries = llmClient.generateSummary(llmBatchContext.texts, llmBatchContext.relativePath);
 

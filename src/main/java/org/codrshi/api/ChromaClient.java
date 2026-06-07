@@ -53,6 +53,7 @@ public final class ChromaClient extends Client {
     }
 
     public String getOrCreateCollection(String collection) {
+        log.debug("Ensuring ChromaDB collection '{}' exists", collection);
         GetOrCreateCollectionRequest body = new GetOrCreateCollectionRequest(collection, false);
         HttpResponse<String> response = executePost(
                 BASE_URL + GET_OR_CREATE_COLLECTION,
@@ -93,6 +94,7 @@ public final class ChromaClient extends Client {
     }
 
     public Map<Object,Object> searchEmbeddings(String collectionId, List<List<Float>> embedding, int limit){
+        log.debug("Querying ChromaDB collection '{}' for top {} matches", collectionId, limit);
         SearchEmbeddingRequest body = new SearchEmbeddingRequest(embedding, limit);
         HttpResponse<String> response = executePost(
                 BASE_URL + String.format(SEARCH_EMBEDDINGS, collectionId),
@@ -115,6 +117,8 @@ public final class ChromaClient extends Client {
     }
 
     public void deleteEmbeddings(String collectionId, List<String> ids) {
+        log.debug("Deleting {} embedding id(s) from ChromaDB collection '{}'",
+                ids.size(), collectionId);
         DeleteEmbeddingRequest body = new DeleteEmbeddingRequest(ids);
         HttpResponse<String> response = executePost(
                 BASE_URL + String.format(DELETE_EMBEDDINGS, collectionId),

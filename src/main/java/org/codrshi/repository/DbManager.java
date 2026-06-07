@@ -79,6 +79,7 @@ public class DbManager {
             log.error("Failed to initialize SQLite schema", e);
             throw new SemseaException("Failed to initialize the local database.", e);
         }
+        log.info("Local database ready at {}", DB_URL);
     }
 
     public static Connection getConnection() throws SQLException {

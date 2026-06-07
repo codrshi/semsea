@@ -27,17 +27,23 @@ public class MountService {
 
     public void unmount(String path) {
         String absolutePath = resolveAbsolutePath(path);
+        log.info("Unmounting any existing workspace at '{}'", absolutePath);
 
         Optional.ofNullable(DbExecutor.deleteWorkspaceByLocation(absolutePath))
                 .ifPresent(chromaClient::deleteCollection);
         ConfigManager.updateWorkspace(null, null);
+        log.info("Unmount complete for '{}'", absolutePath);
     }
 
     public void mount(String workspace, String path) {
         String absolutePath = resolveAbsolutePath(path);
+        log.info("Mounting workspace '{}' at '{}'", workspace, absolutePath);
+
         List<Object> isPresent = DbExecutor.exists(workspace, absolutePath);
 
         if(isPresent.get(0)!=null){
+            log.info("Workspace '{}' already attached at '{}'; only refreshing active pointer",
+                    workspace, absolutePath);
             ConfigManager.updateWorkspace(workspace,(String) isPresent.get(0));
             TerminalRenderer.println("  %s workspace %s is already attached at %s",
                     TerminalRenderer.green("+"),
@@ -47,6 +53,8 @@ public class MountService {
         }
 
         if((boolean) isPresent.get(1)){
+            log.warn("Mount aborted: workspace '{}' or path '{}' already registered separately",
+                    workspace, absolutePath);
             TerminalRenderer.println("  %s workspace %s or path %s is already registered.",
                     TerminalRenderer.red("x"),
                     TerminalRenderer.bold(workspace),
@@ -56,10 +64,13 @@ public class MountService {
 
         try {
             String collectionId = chromaClient.getOrCreateCollection(workspace);
+            log.debug("Created vector store collection '{}' (id={})", workspace, collectionId);
+
             DbExecutor.saveWorkspace(workspace, absolutePath, collectionId);
             ConfigManager.updateWorkspace(workspace, collectionId);
 
             ioMountingService.serialize(path);
+            log.info("Mount complete for workspace '{}'", workspace);
         }
         catch (SemseaException e) {
             log.error("Mount failed for workspace '{}', cleaning up", workspace, e);

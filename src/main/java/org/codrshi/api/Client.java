@@ -51,8 +51,12 @@ public abstract sealed class Client permits ChromaClient, OllamaClient, LLMClien
 
     private HttpResponse<String> execute(HttpRequest request, MetricType metricType) {
         long startNanos = Timer.start();
+        log.debug("{} -> {} {}", serviceName, request.method(), request.uri());
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            long elapsedMs = Timer.stop(startNanos) / 1_000_000;
+            log.debug("{} <- {} {} status={} ({} ms)",
+                    serviceName, request.method(), request.uri(), response.statusCode(), elapsedMs);
             MetricCollector.record(metricType, Timer.stop(startNanos));
             return response;
         }

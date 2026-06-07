@@ -98,6 +98,7 @@ public class DbExecutor {
             ps.setString(1, path);
             try(ResultSet resultSet = ps.executeQuery()) {
                 String workspace = resultSet.next() ? resultSet.getString("id") : null;
+                log.debug("Deleted workspace at '{}': workspaceId={}", path, workspace);
                 MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
                 return workspace;
             }
@@ -116,6 +117,7 @@ public class DbExecutor {
         ) {
             ps.setString(1, id);
             boolean isDeleted = ps.executeUpdate() == 1;
+            log.debug("Delete workspace by id '{}' -> deleted={}", id, isDeleted);
             MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
             return isDeleted;
         }
@@ -156,6 +158,8 @@ public class DbExecutor {
             throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
 
+        log.debug("Workspace existence check for '{}' at '{}': matchedCollectionId={}, partialMatch={}",
+                workspace, location, collectionId, isSinglePresent);
         MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
         return Arrays.asList(collectionId, isSinglePresent);
     }
@@ -171,6 +175,8 @@ public class DbExecutor {
             ps.setString(3, collectionId);
             ps.setTimestamp(4, new Timestamp(System.currentTimeMillis()));
             ps.executeUpdate();
+            log.debug("Inserted workspace '{}' (location='{}', collectionId='{}')",
+                    workspace, location, collectionId);
         }
         catch (SQLException e) {
             log.error("Failed to save workspace '{}' at '{}'", workspace, location, e);
@@ -204,6 +210,7 @@ public class DbExecutor {
             throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
 
+        log.debug("Loaded {} metadata entries for workspace '{}'", map.size(), workspace);
         MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
         return map;
     }
@@ -217,6 +224,7 @@ public class DbExecutor {
             ps.setString(1, workspace);
             try(ResultSet resultSet = ps.executeQuery()) {
                 String location = resultSet.next() ? resultSet.getString("location") : null;
+                log.debug("Resolved location for workspace '{}' -> '{}'", workspace, location);
                 MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
                 return location;
             }

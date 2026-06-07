@@ -107,7 +107,7 @@ public final class LLMClient extends Client{
         String requestBody = objectMapper.writeValueAsString(chatCompletionRequest);
         List<String> result = null;
 
-        log.debug("request body: {}", requestBody);
+        log.trace("LLM request body: {}", requestBody);
 
         for(int i=0; i<RETRY_COUNTER; i++) {
             HttpResponse<String> response = executePost(requestUrl, requestBody, MetricType.LLM_GENERATE_SUMMARY);
@@ -173,7 +173,8 @@ public final class LLMClient extends Client{
         Map<String, Object> choice = ((List<Map<String, Object>>) responseBody.get("choices")).getFirst();
         String content = ((String) ((Map<Object, Object>) choice.get("message")).get("content")).trim();
 
-        log.debug("{} tokens used. Raw response: {}",tokens, content);
+        log.debug("LLM consumed {} tokens; response length={} chars", tokens, content.length());
+        log.trace("LLM raw response content: {}", content);
 
         if(content.startsWith("```json")) {
             content = content.substring(7, content.length() - 3).trim();

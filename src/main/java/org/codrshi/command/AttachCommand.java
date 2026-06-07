@@ -1,5 +1,7 @@
 package org.codrshi.command;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.service.MountService;
 import org.codrshi.util.TerminalRenderer;
@@ -17,6 +19,8 @@ import picocli.CommandLine.Parameters;
         mixinStandardHelpOptions = true
 )
 public class AttachCommand implements Runnable {
+
+    private static final Logger log = LogManager.getLogger(AttachCommand.class);
 
     @Spec
     CommandSpec commandSpec;
@@ -41,6 +45,7 @@ public class AttachCommand implements Runnable {
     @Override
     public void run() {
         TerminalRenderer.init(commandSpec.commandLine().getOut());
+        log.info("'attach' invoked (workspace='{}', path='{}', clear={})", collection, path, clear);
 
         String absolutePath = MountService.resolveAbsolutePath(path);
 
@@ -60,5 +65,6 @@ public class AttachCommand implements Runnable {
 
         mountService.mount(collection, path);
         MetricCollector.print("ATTACH_COMMAND");
+        log.info("'attach' completed for workspace='{}'", collection);
     }
 }

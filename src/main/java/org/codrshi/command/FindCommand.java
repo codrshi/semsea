@@ -1,5 +1,7 @@
 package org.codrshi.command;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codrshi.config.ConfigManager;
 import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
@@ -20,6 +22,8 @@ import java.util.concurrent.Callable;
         mixinStandardHelpOptions = true
 )
 public class FindCommand implements Callable<Integer> {
+
+    private static final Logger log = LogManager.getLogger(FindCommand.class);
 
     private static final int FILE_COLUMN_WIDTH = 60;
 
@@ -42,6 +46,7 @@ public class FindCommand implements Callable<Integer> {
     @Override
     public Integer call() {
         TerminalRenderer.init(commandSpec.commandLine().getOut());
+        log.info("'find' invoked (query=\"{}\", limit={})", query, limit);
 
         String workspace = ConfigManager.getConfig().getWorkspace();
         if(workspace == null || ConfigManager.getConfig().getCollectionId() == null) {
@@ -65,6 +70,7 @@ public class FindCommand implements Callable<Integer> {
             TerminalRenderer.println("  %s no matching files found.",
                     TerminalRenderer.dim("-"));
             TerminalRenderer.println();
+            log.info("'find' completed: 0 results for query=\"{}\"", query);
             MetricCollector.print("FIND_COMMAND");
             return 0;
         }
@@ -81,6 +87,7 @@ public class FindCommand implements Callable<Integer> {
         }
         TerminalRenderer.println();
 
+        log.info("'find' completed: {} results for query=\"{}\"", result.size(), query);
         MetricCollector.print("FIND_COMMAND");
         return 0;
     }

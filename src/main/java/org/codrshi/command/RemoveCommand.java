@@ -1,5 +1,7 @@
 package org.codrshi.command;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codrshi.api.ChromaClient;
 import org.codrshi.config.ConfigManager;
 import org.codrshi.error.SemseaException;
@@ -18,6 +20,8 @@ import picocli.CommandLine.Command;
 )
 public class RemoveCommand implements Runnable {
 
+    private static final Logger log = LogManager.getLogger(RemoveCommand.class);
+
     @Spec
     CommandSpec commandSpec;
 
@@ -33,6 +37,7 @@ public class RemoveCommand implements Runnable {
     @Override
     public void run() {
         TerminalRenderer.init(commandSpec.commandLine().getOut());
+        log.info("'remove' invoked (workspace='{}')", collection);
 
         if(!DbExecutor.deleteWorkspaceByID(collection)) {
             throw new SemseaException(
@@ -44,6 +49,7 @@ public class RemoveCommand implements Runnable {
 
         String activeWorkspace = ConfigManager.getConfig().getWorkspace();
         if(activeWorkspace != null && activeWorkspace.equals(collection)) {
+            log.info("Cleared active workspace pointer (was '{}')", activeWorkspace);
             ConfigManager.updateWorkspace(null, null);
         }
 
@@ -54,5 +60,6 @@ public class RemoveCommand implements Runnable {
         TerminalRenderer.println();
 
         MetricCollector.print("REMOVE_COMMAND");
+        log.info("'remove' completed for workspace='{}'", collection);
     }
 }

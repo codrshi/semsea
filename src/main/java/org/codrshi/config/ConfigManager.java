@@ -27,6 +27,7 @@ public class ConfigManager {
         }
         try {
             semseaConfig = objectMapper.readValue(FILE_PATH.toFile(), SemseaConfig.class);
+            log.info("Loaded configuration from {}", FILE_PATH);
         }
         catch (Exception e) {
             log.error("Failed to parse {}", FILE_PATH, e);
@@ -45,6 +46,7 @@ public class ConfigManager {
     public static void save(SemseaConfig semseaConfig) {
         try {
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(FILE_PATH.toFile(), semseaConfig);
+            log.debug("Persisted configuration changes to {}", FILE_PATH);
         }
         catch (Exception e) {
             log.error("Failed to write {}", FILE_PATH, e);
