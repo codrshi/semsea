@@ -45,7 +45,7 @@ public class RootCommand implements Runnable {
         printCommand("find <query>",        "Semantically search files in the active workspace");
         printOption ("--limit <n>",         "Max number of results to show (default: 5)");
         printCommand("refresh",             "Re-index changed and removed files in the active workspace");
-        printCommand("remove <workspace>",  "Delete a workspace from the index");
+        printCommand("remove <workspace>...",  "Delete one or more workspaces from the index");
         TerminalRenderer.println();
 
         TerminalRenderer.println("  %s", TerminalRenderer.bold("Examples"));
