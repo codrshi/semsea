@@ -78,8 +78,14 @@ public class DbExecutor {
 
     private static final String GET_WORKSPACE_DETAILS =
             """
-            SELECT location, last_refresh FROM workspace
+            SELECT id, location, last_refresh FROM workspace
             WHERE id = ?;
+            """;
+
+    private static final String LIST_ALL_WORKSPACES =
+            """
+            SELECT id, location, last_refresh FROM workspace
+            ORDER BY last_refresh DESC;
             """;
 
     // column order in list: id, filePath, lastModifiedAt, fileSize
@@ -281,17 +287,13 @@ public class DbExecutor {
         ) {
             ps.setString(1, workspace);
             try(ResultSet resultSet = ps.executeQuery()) {
-                WorkspaceDetails details;
-                if(resultSet.next()) {
-                    details = new WorkspaceDetails(
-                            resultSet.getString("location"),
-                            resultSet.getTimestamp("last_refresh"));
-                    log.debug("Resolved details for workspace '{}': location='{}' lastRefresh={}",
-                            workspace, details.location(), details.lastRefresh());
+                WorkspaceDetails details = resultSet.next() ? mapWorkspaceRow(resultSet) : null;
+                if(details == null) {
+                    log.debug("No workspace row found for '{}'", workspace);
                 }
                 else {
-                    details = null;
-                    log.debug("No workspace row found for '{}'", workspace);
+                    log.debug("Resolved details for workspace '{}': location='{}' lastRefresh={}",
+                            workspace, details.location(), details.lastRefresh());
                 }
                 MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
                 return details;
@@ -301,6 +303,36 @@ public class DbExecutor {
             log.error("Failed to read details for workspace '{}'", workspace, e);
             throw new SemseaException(DB_ERROR_MESSAGE, e);
         }
+    }
+
+    public static List<WorkspaceDetails> listAllWorkspaces(){
+        long startNanos = Timer.start();
+        List<WorkspaceDetails> workspaces = new ArrayList<>();
+
+        try (
+                Connection connection = DbManager.getConnection();
+                PreparedStatement ps = connection.prepareStatement(LIST_ALL_WORKSPACES);
+                ResultSet resultSet = ps.executeQuery()
+        ) {
+            while(resultSet.next()) {
+                workspaces.add(mapWorkspaceRow(resultSet));
+            }
+        }
+        catch (SQLException e) {
+            log.error("Failed to list workspaces", e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
+        }
+
+        log.debug("Listed {} workspace(s)", workspaces.size());
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+        return workspaces;
+    }
+
+    private static WorkspaceDetails mapWorkspaceRow(ResultSet rs) throws SQLException {
+        return new WorkspaceDetails(
+                rs.getString("id"),
+                rs.getString("location"),
+                rs.getTimestamp("last_refresh"));
     }
 
     private static void executeBatch(String sql, List<List<Object>> list, BatchAdder batchAdder){
