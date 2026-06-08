@@ -1,14 +1,19 @@
 package org.codrshi.service;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.codrshi.api.ChromaClient;
 import org.codrshi.api.LLMClient;
 import org.codrshi.api.OllamaClient;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.util.ProgressRenderer;
 
 import java.nio.file.Path;
 import java.util.*;
 
 public class BatchService {
+
+    private static final Logger log = LogManager.getLogger(BatchService.class);
 
     private static final int BATCH_SIZE = ConfigManager.getConfig().getBatchSize();
     private static final int MAX_LLM_CHARS = ConfigManager.getConfig().getLlmContextLimit();
@@ -32,6 +37,11 @@ public class BatchService {
     public List<String> saveChunks(String text, Path relativePath, Map<String,Object> metadata) {
 
         List<String> uuids = new ArrayList<>();
+
+        int totalChunks = (text.length() <= MAX_LLM_CHARS)
+                ? 1
+                : (int) Math.ceil((double) text.length() / MAX_LLM_CHARS);
+        ProgressRenderer.get().register(relativePath, totalChunks);
 
         if(text.length() <= llmBatchContext.availableChars()){
             uuids.add(UUID.randomUUID().toString());
@@ -64,11 +74,18 @@ public class BatchService {
             return;
         }
 
+        log.debug("Flushing embedding batch: {} document(s) to vector store",
+                embeddingBatchContext.count);
+
         String collectionId = ConfigManager.getConfig().getCollectionId();
 
         List<List<Float>> embeddings = ollamaClient.createEmbeddings(embeddingBatchContext.texts);
 
         chromaClient.saveEmbedding(collectionId, embeddingBatchContext.ids, embeddingBatchContext.documents, embeddings, embeddingBatchContext.metadatas);
+
+        for(String document : embeddingBatchContext.documents) {
+            ProgressRenderer.get().markStored(document);
+        }
 
         embeddingBatchContext = new EmbeddingBatchContext();
     }
@@ -78,6 +95,7 @@ public class BatchService {
             return;
         }
 
+        log.debug("Flushing delete batch: {} embedding id(s)", embeddingsToDelete.size());
         chromaClient.deleteEmbeddings(ConfigManager.getConfig().getCollectionId(), embeddingsToDelete);
         embeddingsToDelete = new ArrayList<>();
     }
@@ -87,9 +105,13 @@ public class BatchService {
             return;
         }
 
+        log.debug("Flushing LLM batch: {} chunk(s), {} chars total",
+                llmBatchContext.texts.size(), llmBatchContext.totalChars);
+
         List<String> summaries = llmClient.generateSummary(llmBatchContext.texts, llmBatchContext.relativePath);
 
         for(int i=0; i<summaries.size(); i++){
+            ProgressRenderer.get().markSummarized(llmBatchContext.relativePath.get(i));
             addToEmbeddingBatch(summaries.get(i), llmBatchContext.relativePath.get(i), llmBatchContext.ids.get(i), llmBatchContext.metadatas.get(i));
         }
 

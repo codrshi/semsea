@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 public class QueryService {
-    private final Logger logger = LogManager.getLogger(QueryService.class.getName());
+
+    private static final Logger log = LogManager.getLogger(QueryService.class);
 
     private static final int LIMIT_MULTIPLIER = ConfigManager.getConfig().getLimitMultiplier();
 
@@ -26,17 +27,21 @@ public class QueryService {
 
     public List<List<String>> search(String query, int limit){
         String collectionId = ConfigManager.getConfig().getCollectionId();
+        log.info("Searching collection '{}' for query=\"{}\" (limit={}, candidatePool={})",
+                collectionId, query, limit, limit * LIMIT_MULTIPLIER);
 
-        // TODO: handle collectionId = null
         List<List<Float>> queryEmbedding = ollamaClient.createEmbeddings(List.of(query));
-        logger.info("Embeddings generated of size {}\n", queryEmbedding.size());
+        log.debug("Generated {} query embedding vector(s)", queryEmbedding.size());
 
         Map<Object, Object> response = chromaClient.searchEmbeddings(collectionId, queryEmbedding, limit * LIMIT_MULTIPLIER);
 
         List<List<String>> result = new ArrayList<>();
         Map<String, FileScoreStat> fileScoreStatMap = aggregate(response, result);
+        log.debug("Aggregated {} unique file(s) from vector store response", fileScoreStatMap.size());
 
-        return rankFiles(fileScoreStatMap, result, limit);
+        List<List<String>> ranked = rankFiles(fileScoreStatMap, result, limit);
+        log.info("Returning {} ranked result(s) for query=\"{}\"", ranked.size(), query);
+        return ranked;
     }
 
     private Map<String, FileScoreStat> aggregate(Map<Object, Object> response, List<List<String>> result) {

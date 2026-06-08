@@ -1,45 +1,91 @@
 package org.codrshi.config;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.codrshi.error.SemseaException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class ConfigManager {
+
+    private static final Logger log = LogManager.getLogger(ConfigManager.class);
+
     private static final String FILE_NAME = "semsea.json";
-    private static final Path FILE_PATH = Paths.get(System.getProperty("user.dir"),FILE_NAME);
+    private static final Path FILE_PATH = Paths.get(System.getProperty("user.dir"), FILE_NAME);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final SemseaConfig semseaConfig;
 
     static {
-        try {
-            if(!Files.exists(FILE_PATH)){
-                throw new RuntimeException(FILE_NAME + " file does not exist.");
-            }
-            semseaConfig = objectMapper.readValue(FILE_PATH.toFile(), SemseaConfig.class);
+        if(!Files.exists(FILE_PATH)) {
+            log.error("Configuration file not found at {}", FILE_PATH);
+            throw new SemseaException(
+                    "Configuration file '" + FILE_NAME + "' was not found in the current directory.",
+                    "Create " + FILE_NAME + " in the directory you are running semsea from.");
         }
-        catch (Exception e){
-            throw new RuntimeException("Failed to load "+FILE_NAME,e);
+        try {
+            semseaConfig = objectMapper.readValue(FILE_PATH.toFile(), SemseaConfig.class);
+            log.info("Loaded configuration from {}", FILE_PATH);
+        }
+        catch (Exception e) {
+            log.error("Failed to parse {}", FILE_PATH, e);
+            throw new SemseaException(
+                    "Configuration file '" + FILE_NAME + "' is invalid or corrupted.",
+                    e);
         }
     }
 
-    public static void updateWorkspace(String workspace, String collectionId){
+    public static void updateWorkspace(String workspace, String collectionId) {
         semseaConfig.setWorkspace(workspace);
         semseaConfig.setCollectionId(collectionId);
         save(semseaConfig);
     }
 
-    public static void save(SemseaConfig semseaConfig){
+    public static void updateIndexingRules(Set<String> ignoredDirs,    boolean replaceDirs,
+                                           Set<String> ignoredFiles,   boolean replaceFiles,
+                                           Set<String> supportedFiles, boolean replaceSupported) {
+
+        if(ignoredDirs != null) {
+            semseaConfig.setIgnoredDirectories(
+                    merge(semseaConfig.getIgnoredDirectories(), ignoredDirs, replaceDirs));
+        }
+        if(ignoredFiles != null) {
+            semseaConfig.setIgnoredFiles(
+                    merge(semseaConfig.getIgnoredFiles(), ignoredFiles, replaceFiles));
+        }
+        if(supportedFiles != null) {
+            semseaConfig.setSupportedFiles(
+                    merge(semseaConfig.getSupportedFiles(), supportedFiles, replaceSupported));
+        }
+        save(semseaConfig);
+        log.info("Indexing rules updated in {}", FILE_NAME);
+    }
+
+    private static Set<String> merge(Set<String> current, Set<String> incoming, boolean replace) {
+        Set<String> result = new LinkedHashSet<>();
+        if(!replace && current != null) {
+            result.addAll(current);
+        }
+        result.addAll(incoming);
+        return result;
+    }
+
+    public static void save(SemseaConfig semseaConfig) {
         try {
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(FILE_PATH.toFile(), semseaConfig);
+            log.debug("Persisted configuration changes to {}", FILE_PATH);
         }
-        catch (Exception e){
-            throw new RuntimeException("Failed to update "+FILE_NAME,e);
+        catch (Exception e) {
+            log.error("Failed to write {}", FILE_PATH, e);
+            throw new SemseaException("Could not save changes to '" + FILE_NAME + "'.", e);
         }
     }
 
-    public static SemseaConfig getConfig(){
+    public static SemseaConfig getConfig() {
         return semseaConfig;
     }
 }

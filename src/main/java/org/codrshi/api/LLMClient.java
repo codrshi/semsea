@@ -2,6 +2,7 @@ package org.codrshi.api;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricType;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
@@ -21,10 +22,12 @@ import java.util.Map;
 public final class LLMClient extends Client{
     private final static Logger log = LogManager.getLogger(LLMClient.class.getName());
 
+    private static final String SERVICE_NAME = "LLM";
+
     private final static int RETRY_COUNTER = 3;
-    private final static String BASE_URL  = "http://localhost:11434/v1";
+    public  final static String BASE_URL  = "http://localhost:11434/v1";
+    public  final static String LLM_MODEL = "qwen2.5-coder:3b";
     private final static String CHAT_COMPLETIONS = "/chat/completions";
-    private final static String LLM_MODEL = "qwen2.5-coder:3b";
     private static final String SYSTEM_PROMPT =
             """
             You are a semantic code indexing engine.
@@ -71,7 +74,7 @@ public final class LLMClient extends Client{
     private final ObjectMapper objectMapper;
 
     public LLMClient() {
-        super();
+        super(SERVICE_NAME);
         objectMapper = JsonMapper.builder()
                 .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                 .propertyNamingStrategy(new PropertyNamingStrategies.NamingBase() {
@@ -104,30 +107,31 @@ public final class LLMClient extends Client{
         String requestBody = objectMapper.writeValueAsString(chatCompletionRequest);
         List<String> result = null;
 
-        log.debug("request body: {}", requestBody);
+        log.trace("LLM request body: {}", requestBody);
 
         for(int i=0; i<RETRY_COUNTER; i++) {
             HttpResponse<String> response = executePost(requestUrl, requestBody, MetricType.LLM_GENERATE_SUMMARY);
 
             if (response.statusCode() != 200) {
-                throw new RuntimeException("Failed to generate LLM summary: " + response.body());
+                log.error("LLM chat-completions failed: status={} body={}",
+                        response.statusCode(), response.body());
+                throw new SemseaException("LLM service '" + LLM_MODEL + "' returned an unexpected response.");
             }
 
             log.debug("Created LLM summary successfully for {} characters.", fileContents.length());
 
             try {
                 result = extractSummary(response.body(), texts.size());
+                break;
             }
             catch (IllegalStateException | JacksonException e) {
+                log.warn("LLM returned malformed summary (attempt {} of {})", i + 1, RETRY_COUNTER, e);
                 result = null;
-                continue;
             }
-
-            break;
         }
 
         if(result == null) {
-            throw new RuntimeException("Failed to extract summary from response body");
+            throw new SemseaException("LLM service '" + LLM_MODEL + "' could not produce a usable summary after retries.");
         }
 
         return result;
@@ -169,7 +173,8 @@ public final class LLMClient extends Client{
         Map<String, Object> choice = ((List<Map<String, Object>>) responseBody.get("choices")).getFirst();
         String content = ((String) ((Map<Object, Object>) choice.get("message")).get("content")).trim();
 
-        log.debug("{} tokens used. Raw response: {}",tokens, content);
+        log.debug("LLM consumed {} tokens; response length={} chars", tokens, content.length());
+        log.trace("LLM raw response content: {}", content);
 
         if(content.startsWith("```json")) {
             content = content.substring(7, content.length() - 3).trim();

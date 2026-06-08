@@ -3,7 +3,7 @@ package org.codrshi.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codrshi.util.MetadataHolder;
-import org.codrshi.util.TerminalRenderer;
+import org.codrshi.util.ProgressRenderer;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -23,6 +23,11 @@ public class IORefreshingService extends IOService{
     }
 
     @Override
+    protected String getProgressTitle() {
+        return "Refreshing workspace";
+    }
+
+    @Override
     public void processFile(Path projectPath, Path filePath, String fileType) throws IOException {
         log.debug("Processing file {}", filePath.getFileName());
 
@@ -32,12 +37,10 @@ public class IORefreshingService extends IOService{
         Map<String,Object> metadata = Map.of("file-type", fileType, "last-modified-time", lastModifiedAt.toString());
 
         if(isNewFile(relativePath.toString())){
-            TerminalRenderer.print("processing new file %s...", filePath.getFileName().toString());
             List<String> recordIds = batchService.saveChunks(Files.readString(filePath), relativePath, metadata);
             dbBatchService.save(relativePath.toString(), recordIds, lastModifiedAt.toMillis(), Files.size(filePath));
         }
         else if(isModifiedFile(relativePath.toString(), lastModifiedAt, fileSize)){
-            TerminalRenderer.print("processing modified file %s...", filePath.getFileName().toString());
             MetadataHolder metadataHolder = metadataHolderMap.get(relativePath.toString());
 
             batchService.deleteChunks(metadataHolder.ids());
@@ -66,7 +69,7 @@ public class IORefreshingService extends IOService{
         }
 
         metadataHolderMap.forEach((key, value) -> {
-            TerminalRenderer.print("processing deleted file %s...", key);
+            ProgressRenderer.get().noteRemoval(key);
             batchService.deleteChunks(value.ids());
             dbBatchService.delete(key);
         });
