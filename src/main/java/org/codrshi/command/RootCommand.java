@@ -5,7 +5,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
 
-// TODO: command to check heartbeat of OllamaClient & ChromaClient
 @Command(
         name = "semsea",
         version = "semsea 1.0",
@@ -19,6 +18,7 @@ import picocli.CommandLine.Spec;
                 FindCommand.class,
                 RefreshCommand.class,
                 RemoveCommand.class,
+                ConfigCommand.class,
                 HeartbeatCommand.class
         }
 )
@@ -53,6 +53,7 @@ public class RootCommand implements Runnable {
         printOption ("--limit <n>",            "Max number of results to show (default: 5)");
         printCommand("refresh",                "Re-index changed and removed files in the active workspace");
         printCommand("remove <workspace>...",  "Delete one or more workspaces from the index");
+        printCommand("config [show|set]",      "Show or update ignored/supported file rules");
         printCommand("heartbeat",              "Check connectivity to SQLite, ChromaDB, and Ollama");
         TerminalRenderer.println();
 
@@ -65,6 +66,8 @@ public class RootCommand implements Runnable {
                 TerminalRenderer.dim("$ ") + "semsea find \"where is the database config initialized\"");
         TerminalRenderer.println("    %s",
                 TerminalRenderer.dim("$ ") + "semsea refresh");
+        TerminalRenderer.println("    %s",
+                TerminalRenderer.dim("$ ") + "semsea config set --add-supported-files .rs,.go");
         TerminalRenderer.println();
 
         TerminalRenderer.println("  %s",

@@ -31,7 +31,7 @@ public class HeartbeatCommand implements Callable<Integer> {
     private static final Logger log = LogManager.getLogger(HeartbeatCommand.class);
 
     private static final int NAME_WIDTH   = 10;
-    private static final int STATUS_WIDTH =  9;
+    private static final int STATUS_WIDTH = 12;
     private static final int LATENCY_WIDTH = 8;
 
     private static final String SQLITE_HEARTBEAT_QUERY = "SELECT COUNT(*) FROM workspace;";

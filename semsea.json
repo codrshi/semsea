@@ -4,11 +4,38 @@
   "dbDirectory" : ".db",
   "dbName" : "semsea.db",
   "dbUrl" : "jdbc:sqlite",
-  "ignoredDirectories" : [ ".git", "build", ".vscode", ".idea", "node_modules", "target" ],
-  "ignoredFiles" : [ "package-lock.json" ],
+  "ignoredDirectories" : [
+    ".bundle", ".cache", ".dart_tool", ".eclipse", ".git", ".gradle",
+    ".hg", ".idea", ".metadata", ".mvn", ".mypy_cache", ".next", ".nuxt",
+    ".parcel-cache", ".pnpm-store", ".pytest_cache", ".ruff_cache",
+    ".settings", ".svelte-kit", ".svn", ".terraform", ".tox", ".turbo",
+    ".venv", ".vs", ".vscode", "DerivedData", "Pods", "__pycache__",
+    "bin", "build", "coverage", "dist", "env", "htmlcov", "intermediates",
+    "log", "logs", "node_modules", "obj", "out", "packages", "target",
+    "tmp", "vendor", "venv", "xcuserdata"
+  ],
+  "ignoredFiles" : [
+    ".DS_Store", "Cargo.lock", "Gemfile.lock", "Pipfile.lock", "Thumbs.db",
+    "composer.lock", "desktop.ini", "go.sum", "package-lock.json",
+    "pnpm-lock.yaml", "poetry.lock", "yarn.lock"
+  ],
   "limitMultiplier" : 10,
   "llmContextLimit" : 5000,
   "sqliteBatchSize" : 500,
-  "supportedFiles" : [ ".html", ".css", ".txt", ".conf", ".sql", ".js", ".java", ".json", ".xml" ],
+  "supportedFiles" : [
+    ".adoc", ".astro", ".bash", ".bat", ".bazel", ".bzl", ".c", ".cc",
+    ".cfg", ".cjs", ".clj", ".cljs", ".cmake", ".cmd", ".conf", ".cpp",
+    ".cs", ".css", ".cxx", ".dart", ".dockerfile", ".ejs", ".erb", ".erl",
+    ".ex", ".exs", ".fs", ".fsi", ".fsx", ".go", ".gql", ".gradle",
+    ".graphql", ".groovy", ".h", ".hbs", ".hpp", ".hs", ".htm", ".html",
+    ".ini", ".ipynb", ".j2", ".java", ".jl", ".js", ".json", ".jsx",
+    ".kt", ".kts", ".less", ".liquid", ".lua", ".m", ".md", ".mdx",
+    ".mjs", ".ml", ".mli", ".mm", ".php", ".phtml", ".pl", ".pm",
+    ".properties", ".proto", ".ps1", ".pug", ".py", ".pyi", ".r",
+    ".rake", ".rb", ".rs", ".rst", ".sass", ".sbt", ".scala", ".scss",
+    ".sh", ".sql", ".svelte", ".swift", ".tex", ".thrift", ".tmpl",
+    ".toml", ".ts", ".tsx", ".txt", ".vue", ".xml", ".yaml", ".yml",
+    ".zsh"
+  ],
   "workspace" : "sparc"
 }

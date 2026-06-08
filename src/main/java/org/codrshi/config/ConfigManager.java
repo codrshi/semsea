@@ -8,6 +8,8 @@ import tools.jackson.databind.ObjectMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class ConfigManager {
 
@@ -41,6 +43,35 @@ public class ConfigManager {
         semseaConfig.setWorkspace(workspace);
         semseaConfig.setCollectionId(collectionId);
         save(semseaConfig);
+    }
+
+    public static void updateIndexingRules(Set<String> ignoredDirs,    boolean replaceDirs,
+                                           Set<String> ignoredFiles,   boolean replaceFiles,
+                                           Set<String> supportedFiles, boolean replaceSupported) {
+
+        if(ignoredDirs != null) {
+            semseaConfig.setIgnoredDirectories(
+                    merge(semseaConfig.getIgnoredDirectories(), ignoredDirs, replaceDirs));
+        }
+        if(ignoredFiles != null) {
+            semseaConfig.setIgnoredFiles(
+                    merge(semseaConfig.getIgnoredFiles(), ignoredFiles, replaceFiles));
+        }
+        if(supportedFiles != null) {
+            semseaConfig.setSupportedFiles(
+                    merge(semseaConfig.getSupportedFiles(), supportedFiles, replaceSupported));
+        }
+        save(semseaConfig);
+        log.info("Indexing rules updated in {}", FILE_NAME);
+    }
+
+    private static Set<String> merge(Set<String> current, Set<String> incoming, boolean replace) {
+        Set<String> result = new LinkedHashSet<>();
+        if(!replace && current != null) {
+            result.addAll(current);
+        }
+        result.addAll(incoming);
+        return result;
     }
 
     public static void save(SemseaConfig semseaConfig) {
