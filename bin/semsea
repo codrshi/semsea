@@ -1,14 +1,15 @@
 #!/usr/bin/env sh
 # Wrapper that locates semsea.jar relative to this script and runs it.
-# Works both from the project root (uses target/semsea.jar) and from
-# an install directory (uses semsea.jar next to this script).
+# Lookup order:
+#   1. semsea.jar next to this script   (for install layouts: bin/ + lib/, or both side-by-side)
+#   2. ../target/semsea.jar              (for running from the dev project root)
 
 set -e
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 JAR="$DIR/semsea.jar"
 if [ ! -f "$JAR" ]; then
-    JAR="$DIR/target/semsea.jar"
+    JAR="$DIR/../target/semsea.jar"
 fi
 if [ ! -f "$JAR" ]; then
     echo "semsea.jar not found." >&2
