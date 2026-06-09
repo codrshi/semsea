@@ -2,7 +2,6 @@ package org.codrshi.command;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codrshi.config.ConfigManager;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.util.TerminalRenderer;
@@ -34,7 +33,6 @@ public class ListCommand implements Runnable {
         log.info("'list' invoked");
 
         List<WorkspaceDetails> workspaces = DbExecutor.listAllWorkspaces();
-        String active = ConfigManager.getConfig().getWorkspace();
 
         TerminalRenderer.println();
 
@@ -55,7 +53,7 @@ public class ListCommand implements Runnable {
         TerminalRenderer.println();
 
         for(int i = 0; i < workspaces.size(); i++) {
-            renderEntry(i + 1, workspaces.get(i), active);
+            renderEntry(i + 1, workspaces.get(i));
             if(i < workspaces.size() - 1) {
                 TerminalRenderer.println();
             }
@@ -67,10 +65,8 @@ public class ListCommand implements Runnable {
         log.info("'list' completed: {} workspace(s)", workspaces.size());
     }
 
-    private static void renderEntry(int index, WorkspaceDetails w, String activeId) {
-        boolean isActive = w.id().equals(activeId);
-
-        String activeMarker = isActive
+    private static void renderEntry(int index, WorkspaceDetails w) {
+        String activeMarker = w.active()
                 ? "  " + TerminalRenderer.green("(active)")
                 : "";
 

@@ -2,7 +2,6 @@ package org.codrshi.repository;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codrshi.config.ConfigManager;
 import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.metric.MetricType;
@@ -78,21 +77,34 @@ public class DbExecutor {
 
     private static final String GET_WORKSPACE_DETAILS =
             """
-            SELECT id, location, collection_id, last_refresh FROM workspace
+            SELECT id, location, collection_id, last_refresh, is_active FROM workspace
             WHERE id = ?;
             """;
 
     private static final String LIST_ALL_WORKSPACES =
             """
-            SELECT id, location, collection_id, last_refresh FROM workspace
+            SELECT id, location, collection_id, last_refresh, is_active FROM workspace
             ORDER BY last_refresh DESC;
             """;
 
+    private static final String GET_ACTIVE_WORKSPACE =
+            """
+            SELECT id, location, collection_id, last_refresh, is_active FROM workspace
+            WHERE is_active = 1
+            LIMIT 1;
+            """;
+
+    private static final String CLEAR_ALL_ACTIVE_WORKSPACES =
+            "UPDATE workspace SET is_active = 0 WHERE is_active = 1";
+
+    private static final String SET_ACTIVE_WORKSPACE =
+            "UPDATE workspace SET is_active = 1 WHERE id = ?";
+
     // column order in list: id, filePath, lastModifiedAt, fileSize
-    public static void saveAll(List<List<Object>> list){
+    public static void saveAll(String workspaceId, List<List<Object>> list){
         executeBatch(INSERT_FILES_INTO_METADATA, list, (PreparedStatement ps, List<Object> row) -> {
             ps.setString(1, row.get(0).toString());
-            ps.setString(2, ConfigManager.getConfig().getWorkspace());
+            ps.setString(2, workspaceId);
             ps.setString(3, row.get(1).toString());
             ps.setLong(4, (Long) row.get(2));
             ps.setLong(5, (Long) row.get(3));
@@ -101,9 +113,9 @@ public class DbExecutor {
     }
 
     // column order in list: filePath
-    public static void deleteAll(List<List<Object>> list){
+    public static void deleteAll(String workspaceId, List<List<Object>> list){
         executeBatch(DELETE_FILES_FROM_METADATA, list, (PreparedStatement ps, List<Object> row) -> {
-            ps.setString(1, ConfigManager.getConfig().getWorkspace());
+            ps.setString(1, workspaceId);
             ps.setString(2, row.getFirst().toString());
             ps.addBatch();
         });
@@ -328,12 +340,80 @@ public class DbExecutor {
         return workspaces;
     }
 
+    public static WorkspaceDetails getActiveWorkspace(){
+        long startNanos = Timer.start();
+        try (
+                Connection connection = DbManager.getConnection();
+                PreparedStatement ps = connection.prepareStatement(GET_ACTIVE_WORKSPACE);
+                ResultSet rs = ps.executeQuery()
+        ) {
+            WorkspaceDetails details = rs.next() ? mapWorkspaceRow(rs) : null;
+            log.debug("Active workspace: {}", details == null ? "<none>" : details.id());
+            MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+            return details;
+        }
+        catch (SQLException e) {
+            log.error("Failed to read active workspace", e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
+        }
+    }
+
+    public static boolean setActiveWorkspace(String id){
+        long startNanos = Timer.start();
+        try (Connection connection = DbManager.getConnection()) {
+            connection.setAutoCommit(false);
+            try (
+                    PreparedStatement clear = connection.prepareStatement(CLEAR_ALL_ACTIVE_WORKSPACES);
+                    PreparedStatement set   = connection.prepareStatement(SET_ACTIVE_WORKSPACE)
+            ) {
+                clear.executeUpdate();
+                set.setString(1, id);
+                int rows = set.executeUpdate();
+                if(rows == 0) {
+                    connection.rollback();
+                    log.warn("Cannot set active workspace: '{}' not found", id);
+                    MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+                    return false;
+                }
+                connection.commit();
+                log.debug("Marked workspace '{}' as active", id);
+                MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+                return true;
+            }
+            catch (SQLException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+        catch (SQLException e) {
+            log.error("Failed to set active workspace to '{}'", id, e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
+        }
+    }
+
+    public static void clearActiveWorkspace(){
+        long startNanos = Timer.start();
+        try (
+                Connection connection = DbManager.getConnection();
+                Statement st = connection.createStatement()
+        ) {
+            int rows = st.executeUpdate(CLEAR_ALL_ACTIVE_WORKSPACES);
+            log.debug("Cleared active workspace pointer (rowsAffected={})", rows);
+        }
+        catch (SQLException e) {
+            log.error("Failed to clear active workspace", e);
+            throw new SemseaException(DB_ERROR_MESSAGE, e);
+        }
+        MetricCollector.record(MetricType.SQLITE_QUERY, Timer.stop(startNanos));
+    }
+
     private static WorkspaceDetails mapWorkspaceRow(ResultSet rs) throws SQLException {
         return new WorkspaceDetails(
                 rs.getString("id"),
                 rs.getString("location"),
                 rs.getString("collection_id"),
-                rs.getTimestamp("last_refresh"));
+                rs.getTimestamp("last_refresh"),
+                rs.getInt("is_active") == 1);
     }
 
     private static void executeBatch(String sql, List<List<Object>> list, BatchAdder batchAdder){

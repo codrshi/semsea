@@ -25,8 +25,7 @@ public class QueryService {
         ollamaClient = new OllamaClient();
     }
 
-    public List<List<String>> search(String query, int limit){
-        String collectionId = ConfigManager.getConfig().getCollectionId();
+    public List<List<String>> search(String collectionId, String query, int limit){
         log.info("Searching collection '{}' for query=\"{}\" (limit={}, candidatePool={})",
                 collectionId, query, limit, limit * LIMIT_MULTIPLIER);
 

@@ -6,7 +6,10 @@ import org.codrshi.api.ChromaClient;
 import org.codrshi.api.LLMClient;
 import org.codrshi.api.OllamaClient;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.error.SemseaException;
+import org.codrshi.repository.DbExecutor;
 import org.codrshi.util.ProgressRenderer;
+import org.codrshi.util.WorkspaceDetails;
 
 import java.nio.file.Path;
 import java.util.*;
@@ -24,6 +27,9 @@ public class BatchService {
     private final OllamaClient ollamaClient;
     private final ChromaClient chromaClient;
     private final LLMClient llmClient;
+
+    /** Lazily resolved from the active workspace on first flush. Stable for the lifetime of this batch service. */
+    private String collectionId;
 
     public BatchService() {
         embeddingsToDelete = new ArrayList<>();
@@ -77,11 +83,9 @@ public class BatchService {
         log.debug("Flushing embedding batch: {} document(s) to vector store",
                 embeddingBatchContext.count);
 
-        String collectionId = ConfigManager.getConfig().getCollectionId();
-
         List<List<Float>> embeddings = ollamaClient.createEmbeddings(embeddingBatchContext.texts);
 
-        chromaClient.saveEmbedding(collectionId, embeddingBatchContext.ids, embeddingBatchContext.documents, embeddings, embeddingBatchContext.metadatas);
+        chromaClient.saveEmbedding(activeCollectionId(), embeddingBatchContext.ids, embeddingBatchContext.documents, embeddings, embeddingBatchContext.metadatas);
 
         for(String document : embeddingBatchContext.documents) {
             ProgressRenderer.get().markStored(document);
@@ -96,8 +100,21 @@ public class BatchService {
         }
 
         log.debug("Flushing delete batch: {} embedding id(s)", embeddingsToDelete.size());
-        chromaClient.deleteEmbeddings(ConfigManager.getConfig().getCollectionId(), embeddingsToDelete);
+        chromaClient.deleteEmbeddings(activeCollectionId(), embeddingsToDelete);
         embeddingsToDelete = new ArrayList<>();
+    }
+
+    private String activeCollectionId() {
+        if(collectionId == null) {
+            WorkspaceDetails active = DbExecutor.getActiveWorkspace();
+            if(active == null) {
+                throw new SemseaException(
+                        "No workspace is currently attached.",
+                        "Run 'semsea attach <workspace> --path <dir>' first.");
+            }
+            collectionId = active.collectionId();
+        }
+        return collectionId;
     }
 
     public void llmFlush() {

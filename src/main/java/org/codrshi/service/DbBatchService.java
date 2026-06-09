@@ -3,7 +3,9 @@ package org.codrshi.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codrshi.config.ConfigManager;
+import org.codrshi.error.SemseaException;
 import org.codrshi.repository.DbExecutor;
+import org.codrshi.util.WorkspaceDetails;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +18,8 @@ public class DbBatchService {
 
     private List<List<Object>> filesToInsert;
     private List<List<Object>> filesToDelete;
+
+    private String workspaceId;
 
     public DbBatchService() {
         filesToInsert = new ArrayList<>();
@@ -43,7 +47,7 @@ public class DbBatchService {
     public void saveFlush(){
         if(!filesToInsert.isEmpty()) {
             log.debug("Flushing SQLite insert batch: {} row(s)", filesToInsert.size());
-            DbExecutor.saveAll(filesToInsert);
+            DbExecutor.saveAll(activeWorkspaceId(), filesToInsert);
             filesToInsert = new ArrayList<>();
         }
     }
@@ -51,8 +55,21 @@ public class DbBatchService {
     public void deleteFlush(){
         if(!filesToDelete.isEmpty()) {
             log.debug("Flushing SQLite delete batch: {} row(s)", filesToDelete.size());
-            DbExecutor.deleteAll(filesToDelete);
+            DbExecutor.deleteAll(activeWorkspaceId(), filesToDelete);
             filesToDelete = new ArrayList<>();
         }
+    }
+
+    private String activeWorkspaceId() {
+        if(workspaceId == null) {
+            WorkspaceDetails active = DbExecutor.getActiveWorkspace();
+            if(active == null) {
+                throw new SemseaException(
+                        "No workspace is currently attached.",
+                        "Run 'semsea attach <workspace> --path <dir>' first.");
+            }
+            workspaceId = active.id();
+        }
+        return workspaceId;
     }
 }

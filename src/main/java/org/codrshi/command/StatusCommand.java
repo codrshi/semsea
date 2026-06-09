@@ -2,8 +2,6 @@ package org.codrshi.command;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codrshi.config.ConfigManager;
-import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.util.TerminalRenderer;
@@ -32,26 +30,18 @@ public class StatusCommand implements Runnable {
         TerminalRenderer.init(commandSpec.commandLine().getOut());
         log.info("'status' invoked");
 
-        String workspace = ConfigManager.getConfig().getWorkspace();
-        if(workspace == null) {
+        WorkspaceDetails active = DbExecutor.getActiveWorkspace();
+        if(active == null) {
             renderNotAttached();
             MetricCollector.print("STATUS_COMMAND");
             log.info("'status' completed: no workspace attached");
             return;
         }
 
-        WorkspaceDetails details = DbExecutor.getWorkspaceDetails(workspace);
-        if(details == null) {
-            log.warn("Active workspace pointer '{}' has no row in workspace table", workspace);
-            throw new SemseaException(
-                    "Active workspace '" + workspace + "' is missing from the local database.",
-                    "Run 'semsea attach " + workspace + " --path <dir>' to re-attach it.");
-        }
-
-        renderStatus(workspace, details);
+        renderStatus(active);
 
         MetricCollector.print("STATUS_COMMAND");
-        log.info("'status' completed for workspace='{}'", workspace);
+        log.info("'status' completed for workspace='{}'", active.id());
     }
 
     private static void renderNotAttached() {
@@ -63,9 +53,9 @@ public class StatusCommand implements Runnable {
         TerminalRenderer.println();
     }
 
-    private static void renderStatus(String workspace, WorkspaceDetails details) {
+    private static void renderStatus(WorkspaceDetails details) {
         TerminalRenderer.println();
-        printField("Active workspace:", TerminalRenderer.cyan(workspace));
+        printField("Active workspace:", TerminalRenderer.cyan(details.id()));
         printField("Path:",             TerminalRenderer.dim(details.location()));
         printField("Last refreshed:",   TimeFormatter.formatLastRefresh(details.lastRefresh()));
         TerminalRenderer.println();

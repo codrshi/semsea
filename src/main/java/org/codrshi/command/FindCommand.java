@@ -2,11 +2,12 @@ package org.codrshi.command;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codrshi.config.ConfigManager;
 import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
+import org.codrshi.repository.DbExecutor;
 import org.codrshi.service.QueryService;
 import org.codrshi.util.TerminalRenderer;
+import org.codrshi.util.WorkspaceDetails;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Parameters;
@@ -48,14 +49,14 @@ public class FindCommand implements Callable<Integer> {
         TerminalRenderer.init(commandSpec.commandLine().getOut());
         log.info("'find' invoked (query=\"{}\", limit={})", query, limit);
 
-        String workspace = ConfigManager.getConfig().getWorkspace();
-        if(workspace == null || ConfigManager.getConfig().getCollectionId() == null) {
+        WorkspaceDetails active = DbExecutor.getActiveWorkspace();
+        if(active == null) {
             throw new SemseaException(
                     "No workspace is currently attached.",
                     "Run 'semsea attach <workspace> --path <dir>' first.");
         }
 
-        List<List<String>> result = queryService.search(query, limit);
+        List<List<String>> result = queryService.search(active.collectionId(), query, limit);
 
         TerminalRenderer.println();
         TerminalRenderer.println("  %s %s",
@@ -63,7 +64,7 @@ public class FindCommand implements Callable<Integer> {
                 "\"" + query + "\"");
         TerminalRenderer.println("  %s %s",
                 TerminalRenderer.bold("Scope:"),
-                TerminalRenderer.cyan(workspace));
+                TerminalRenderer.cyan(active.id()));
         TerminalRenderer.println();
 
         if(result.isEmpty()) {

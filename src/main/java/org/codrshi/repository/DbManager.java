@@ -4,12 +4,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codrshi.config.ConfigManager;
 import org.codrshi.error.SemseaException;
+import org.codrshi.util.SemseaPaths;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -27,9 +28,16 @@ public class DbManager {
                 collection_id TEXT UNIQUE NOT NULL,
                 last_refresh DATETIME NOT NULL,
                 location TEXT UNIQUE NOT NULL,
+                is_active INTEGER NOT NULL DEFAULT 0,
             
                 PRIMARY KEY(id)
             )
+            """;
+
+    private static final String CREATE_IDX_ACTIVE_WORKSPACE =
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS uniq_active_workspace
+            ON workspace(is_active) WHERE is_active = 1;
             """;
 
     private static final String CREATE_METADATA_TABLE =
@@ -55,23 +63,25 @@ public class DbManager {
 
     static {
         try {
-            Path dbDirectoryPath = Paths.get(DB_DIRECTORY);
+            Path dbDirectoryPath = SemseaPaths.home().resolve(DB_DIRECTORY);
             if(!Files.exists(dbDirectoryPath)){
                     Files.createDirectories(dbDirectoryPath);
             }
             DB_URL = ConfigManager.getConfig().getDbUrl() + ":" + dbDirectoryPath.resolve(DB_NAME) + "?foreign_keys=true";
         }
         catch (Exception e) {
-            log.error("Failed to prepare local database directory '{}'", DB_DIRECTORY, e);
+            log.error("Failed to prepare local database directory under semsea home", e);
             throw new SemseaException(
-                    "Could not prepare local database directory '" + DB_DIRECTORY + "'.",
+                    "Could not prepare the local database directory.",
                     e);
         }
     }
 
     public static void init() {
-        try(Statement st = getConnection().createStatement()) {
+        try(Connection connection = getConnection();
+            Statement st = connection.createStatement()) {
             st.execute(CREATE_WORKSPACE_TABLE);
+            st.execute(CREATE_IDX_ACTIVE_WORKSPACE);
             st.execute(CREATE_METADATA_TABLE);
             st.execute(CREATE_IDX_METADATA_workspaceId);
         }

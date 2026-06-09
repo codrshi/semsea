@@ -3,7 +3,6 @@ package org.codrshi.command;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codrshi.api.ChromaClient;
-import org.codrshi.config.ConfigManager;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.util.TerminalRenderer;
@@ -49,7 +48,6 @@ public class RemoveCommand implements Callable<Integer> {
 
         List<String> removed = new ArrayList<>();
         List<String> notFound = new ArrayList<>();
-        String activeWorkspace = ConfigManager.getConfig().getWorkspace();
 
         for(String collection : collections) {
             if(DbExecutor.deleteWorkspaceByID(collection)) {
@@ -69,11 +67,6 @@ public class RemoveCommand implements Callable<Integer> {
                         TerminalRenderer.bold(collection));
                 log.warn("Workspace '{}' not found; skipping", collection);
             }
-        }
-
-        if(activeWorkspace != null && removed.contains(activeWorkspace)) {
-            ConfigManager.updateWorkspace(null, null);
-            log.info("Cleared active workspace pointer (was '{}')", activeWorkspace);
         }
 
         if(collections.size() > 1) {

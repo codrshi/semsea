@@ -1,6 +1,5 @@
 {
   "batchSize" : 20,
-  "collectionId" : "421eaa72-de79-4d1a-bb6b-7a50ebc0d5d2",
   "dbDirectory" : ".db",
   "dbName" : "semsea.db",
   "dbUrl" : "jdbc:sqlite",
@@ -36,6 +35,5 @@
     ".sh", ".sql", ".svelte", ".swift", ".tex", ".thrift", ".tmpl",
     ".toml", ".ts", ".tsx", ".txt", ".vue", ".xml", ".yaml", ".yml",
     ".zsh"
-  ],
-  "workspace" : "sparc"
+  ]
 }

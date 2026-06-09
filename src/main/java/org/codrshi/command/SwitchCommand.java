@@ -2,7 +2,6 @@ package org.codrshi.command;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.codrshi.config.ConfigManager;
 import org.codrshi.error.SemseaException;
 import org.codrshi.metric.MetricCollector;
 import org.codrshi.repository.DbExecutor;
@@ -43,11 +42,9 @@ public class SwitchCommand implements Runnable {
                             + "or 'semsea attach " + target + " --path <dir>' to create it.");
         }
 
-        String current = ConfigManager.getConfig().getWorkspace();
-
         TerminalRenderer.println();
 
-        if(target.equals(current)) {
+        if(details.active()) {
             TerminalRenderer.println("  %s workspace %s is already active.",
                     TerminalRenderer.green("+"),
                     TerminalRenderer.bold(target));
@@ -56,7 +53,16 @@ public class SwitchCommand implements Runnable {
             log.info("'switch' completed: workspace '{}' was already active", target);
         }
         else {
-            ConfigManager.updateWorkspace(target, details.collectionId());
+            WorkspaceDetails previous = DbExecutor.getActiveWorkspace();
+            String previousId = previous == null ? null : previous.id();
+
+            boolean ok = DbExecutor.setActiveWorkspace(target);
+            if(!ok) {
+                log.error("setActiveWorkspace returned false for '{}' though row exists", target);
+                throw new SemseaException(
+                        "Could not activate workspace '" + target + "'.",
+                        "Try running 'semsea list' and switching again.");
+            }
 
             TerminalRenderer.println("  %s switched to workspace %s",
                     TerminalRenderer.green("+"),
@@ -67,7 +73,7 @@ public class SwitchCommand implements Runnable {
             TerminalRenderer.println();
 
             log.info("'switch' completed: active workspace changed from '{}' to '{}'",
-                    current, target);
+                    previousId, target);
         }
 
         MetricCollector.print("SWITCH_COMMAND");

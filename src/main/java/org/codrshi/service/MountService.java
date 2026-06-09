@@ -3,7 +3,6 @@ package org.codrshi.service;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.codrshi.api.ChromaClient;
-import org.codrshi.config.ConfigManager;
 import org.codrshi.error.SemseaException;
 import org.codrshi.repository.DbExecutor;
 import org.codrshi.util.TerminalRenderer;
@@ -31,7 +30,6 @@ public class MountService {
 
         Optional.ofNullable(DbExecutor.deleteWorkspaceByLocation(absolutePath))
                 .ifPresent(chromaClient::deleteCollection);
-        ConfigManager.updateWorkspace(null, null);
         log.info("Unmount complete for '{}'", absolutePath);
     }
 
@@ -44,7 +42,7 @@ public class MountService {
         if(isPresent.get(0)!=null){
             log.info("Workspace '{}' already attached at '{}'; only refreshing active pointer",
                     workspace, absolutePath);
-            ConfigManager.updateWorkspace(workspace,(String) isPresent.get(0));
+            DbExecutor.setActiveWorkspace(workspace);
             TerminalRenderer.println("  %s workspace %s is already attached at %s",
                     TerminalRenderer.green("+"),
                     TerminalRenderer.bold(workspace),
@@ -67,7 +65,7 @@ public class MountService {
             log.debug("Created vector store collection '{}' (id={})", workspace, collectionId);
 
             DbExecutor.saveWorkspace(workspace, absolutePath, collectionId);
-            ConfigManager.updateWorkspace(workspace, collectionId);
+            DbExecutor.setActiveWorkspace(workspace);
 
             ioMountingService.serialize(path);
             log.info("Mount complete for workspace '{}'", workspace);
