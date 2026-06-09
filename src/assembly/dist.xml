@@ -10,7 +10,8 @@
           semsea          (unix launcher, mode 0755)
           semsea.bat      (windows launcher)
           semsea.jar      (shaded uber-jar)
-        install.ps1       (windows installer)
+        install.cmd       (windows entry point - wraps install.ps1)
+        install.ps1       (windows installer - PowerShell)
         install.sh        (unix installer, mode 0755)
         README.md         (quick-start)
         SERVICES.md       (backing-service setup guide)
@@ -60,6 +61,7 @@
                 <include>SERVICES.md</include>
                 <include>LICENSE</include>
                 <include>install.ps1</include>
+                <include>install.cmd</include>
             </includes>
         </fileSet>
 

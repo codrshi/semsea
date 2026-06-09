@@ -38,14 +38,26 @@ hardware tier, Apple Silicon native path, troubleshooting) is in
 
 1. Download `semsea-<version>.zip` from a release.
 2. Extract it anywhere.
-3. From the extracted directory, run PowerShell and:
-   ```powershell
-   .\install.ps1
-   ```
+3. From the extracted directory:
+   - **Easiest**: double-click `install.cmd` in Explorer, or
+   - From a shell:
+     ```powershell
+     .\install.cmd
+     ```
+   `install.cmd` is a thin wrapper around `install.ps1` that bypasses
+   PowerShell's default execution policy for that single process —
+   needed because Windows refuses to run unsigned local `.ps1` files
+   by default. **No administrator rights required.**
 4. Restart your shell. Verify:
    ```powershell
    semsea --help
    ```
+
+> If you'd rather invoke the PowerShell script directly (e.g. to read
+> the code first), run:
+> ```powershell
+> powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+> ```
 
 ### macOS / Linux
 
