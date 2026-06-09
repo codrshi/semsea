@@ -6,10 +6,9 @@ import org.codrshi.error.SemseaException;
 import org.codrshi.util.SemseaPaths;
 import tools.jackson.databind.ObjectMapper;
 
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -18,6 +17,7 @@ public class ConfigManager {
     private static final Logger log = LogManager.getLogger(ConfigManager.class);
 
     private static final String FILE_NAME = "semsea.json";
+    private static final String BUNDLED_DEFAULT = "/semsea.default.json";
     private static final Path FILE_PATH = SemseaPaths.home().resolve(FILE_NAME);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final SemseaConfig semseaConfig;
@@ -39,29 +39,29 @@ public class ConfigManager {
     }
 
     /**
-     * Creates the config file at its target home location. If a legacy
-     * configuration is found in the current working directory (the
-     * pre-move-to-XDG-style behaviour), it is migrated automatically so the
-     * existing state is preserved on first run.
+     * First-run bootstrap: materialises {@code semsea.json} at its home location by
+     * copying the default file shipped inside the JAR.
      */
     private static void bootstrap(Path target) {
-        Path legacy = Paths.get(System.getProperty("user.dir"), FILE_NAME);
-        if(Files.exists(legacy)) {
-            try {
-                Files.copy(legacy, target, StandardCopyOption.REPLACE_EXISTING);
-                log.info("Migrated legacy configuration from {} to {}", legacy, target);
-                return;
+        try (InputStream in = ConfigManager.class.getResourceAsStream(BUNDLED_DEFAULT)) {
+            if(in == null) {
+                throw new SemseaException(
+                        "Bundled default configuration was not found inside the semsea jar.",
+                        "Reinstall semsea from a fresh distribution archive.");
             }
-            catch (Exception e) {
-                log.warn("Failed to migrate legacy configuration from {}", legacy, e);
-            }
+            Files.copy(in, target);
+            log.info("Initialised semsea configuration at {}", target);
         }
-
-        log.error("Configuration file not found at {}", target);
-        throw new SemseaException(
-                "Configuration file '" + FILE_NAME + "' was not found at " + target + ".",
-                "Run semsea from the project directory once to migrate it, "
-                + "or copy a semsea.json into that location.");
+        catch (SemseaException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            log.error("Failed to write initial configuration to {}", target, e);
+            throw new SemseaException(
+                    "Could not create configuration at '" + target + "'.",
+                    "Check that the parent directory is writable.",
+                    e);
+        }
     }
 
     public static void updateIndexingRules(Set<String> ignoredDirs,    boolean replaceDirs,

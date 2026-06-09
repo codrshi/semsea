@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Builds the user-facing distribution archives:
+      target/semsea-<version>.zip      (Windows)
+      target/semsea-<version>.tar.gz   (macOS / Linux)
+
+  Both archives expand to:
+      semsea-<version>/
+        bin/
+          semsea          (unix launcher, mode 0755)
+          semsea.bat      (windows launcher)
+          semsea.jar      (shaded uber-jar)
+        install.ps1       (windows installer)
+        install.sh        (unix installer, mode 0755)
+        README.md         (quick-start)
+        SERVICES.md       (backing-service setup guide)
+        LICENSE
+-->
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0
+                              http://maven.apache.org/xsd/assembly-2.2.0.xsd">
+    <id>dist</id>
+
+    <formats>
+        <format>zip</format>
+        <format>tar.gz</format>
+    </formats>
+
+    <includeBaseDirectory>true</includeBaseDirectory>
+
+    <fileSets>
+        <!-- Unix launcher (executable) -->
+        <fileSet>
+            <directory>${project.basedir}/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>semsea</include>
+            </includes>
+        </fileSet>
+
+        <!-- Windows launcher (no exec bit needed) -->
+        <fileSet>
+            <directory>${project.basedir}/bin</directory>
+            <outputDirectory>bin</outputDirectory>
+            <fileMode>0644</fileMode>
+            <includes>
+                <include>semsea.bat</include>
+            </includes>
+        </fileSet>
+
+        <!-- Top-level docs and installers -->
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>.</outputDirectory>
+            <fileMode>0644</fileMode>
+            <includes>
+                <include>README.md</include>
+                <include>SERVICES.md</include>
+                <include>LICENSE</include>
+                <include>install.ps1</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <outputDirectory>.</outputDirectory>
+            <fileMode>0755</fileMode>
+            <includes>
+                <include>install.sh</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+
+    <!-- The shaded uber-jar lands alongside the launchers in bin/ -->
+    <files>
+        <file>
+            <source>${project.build.directory}/${project.build.finalName}.jar</source>
+            <outputDirectory>bin</outputDirectory>
+            <destName>semsea.jar</destName>
+            <fileMode>0644</fileMode>
+        </file>
+    </files>
+</assembly>

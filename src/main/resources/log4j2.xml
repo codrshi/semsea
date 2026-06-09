@@ -1,11 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The log file lives under semsea's per-user home directory, never the CWD.
+  ${sys:semsea.home} is set by org.codrshi.App's static initialiser before
+  the first call to LogManager, so this resolves to e.g.
+  %APPDATA%\semsea\logs\app-output.log on Windows.
+-->
 <Configuration status="WARN">
     <Properties>
-        <Property name="logPath">logs</Property>
+        <Property name="logDir">${sys:semsea.home}/logs</Property>
     </Properties>
 
     <Appenders>
-        <File name="CustomFileAppender" fileName="${logPath}/app-output.log" append="true">
+        <File name="CustomFileAppender"
+              fileName="${logDir}/app-output.log"
+              createOnDemand="true"
+              append="true">
             <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </File>
     </Appenders>

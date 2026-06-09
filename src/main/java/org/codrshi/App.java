@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.codrshi.command.RootCommand;
 import org.codrshi.error.ErrorHandler;
 import org.codrshi.repository.DbManager;
+import org.codrshi.util.SemseaPaths;
 import org.codrshi.util.TerminalRenderer;
 import picocli.CommandLine;
 
@@ -14,6 +15,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class App {
+
+    /*
+     * IMPORTANT: this block must execute BEFORE the {@code log} field below is
+     * initialised. log4j2.xml references {@code ${sys:semsea.home}} to decide
+     * where {@code app-output.log} goes, and that property must be set before
+     * log4j's first configuration read (triggered by {@link LogManager#getLogger}).
+     */
+    static {
+        System.setProperty("semsea.home", SemseaPaths.home().toString());
+    }
 
     private static final Logger log = LogManager.getLogger(App.class);
 

@@ -35,5 +35,7 @@ build/
 ### Mac OS ###
 .DS_Store
 
-logs
-.db
+logs/
+.db/
+/semsea.json
+*.log
