@@ -19,7 +19,7 @@ $ semsea find "where the database connection url is built"
 
 ## Requirements
 
-semsea talks to three local services. Get them running before using the CLI:
+semsea requires the following three local services:
 
 | Service       | Role                              | Default URL                |
 |---------------|-----------------------------------|----------------------------|
@@ -27,8 +27,7 @@ semsea talks to three local services. Get them running before using the CLI:
 | ChromaDB      | Vector store                      | `http://localhost:8000`    |
 | Java 21+      | Runtime                           | -                          |
 
-Detailed step-by-step setup (Docker, GPU detection, model sizing per
-hardware tier, Apple Silicon native path, troubleshooting) is in
+Detailed step-by-step setup is in
 [SERVICES.md](SERVICES.md). After bringing the services up, run
 `semsea heartbeat` to verify connectivity end-to-end.
 
@@ -37,27 +36,12 @@ hardware tier, Apple Silicon native path, troubleshooting) is in
 ### Windows
 
 1. Download `semsea-<version>.zip` from a release.
-2. Extract it anywhere.
-3. From the extracted directory:
-   - **Easiest**: double-click `install.cmd` in Explorer, or
-   - From a shell:
-     ```powershell
-     .\install.cmd
-     ```
-   `install.cmd` is a thin wrapper around `install.ps1` that bypasses
-   PowerShell's default execution policy for that single process —
-   needed because Windows refuses to run unsigned local `.ps1` files
-   by default. **No administrator rights required.**
+2. Extract it.
+3. From the extracted directory, either double-click `install.cmd` in Explorer or run `.\install.cmd` from shell
 4. Restart your shell. Verify:
    ```powershell
    semsea --help
    ```
-
-> If you'd rather invoke the PowerShell script directly (e.g. to read
-> the code first), run:
-> ```powershell
-> powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
-> ```
 
 ### macOS / Linux
 
@@ -68,14 +52,12 @@ hardware tier, Apple Silicon native path, troubleshooting) is in
    cd semsea-<version>
    ./install.sh
    ```
-3. Open a new shell (or `source` your shell rc). Verify:
+3. Open a new shell and verify:
    ```sh
    semsea --help
    ```
 
-The installer drops the JAR + launcher under a stable location and puts
-`semsea` on your PATH. It never copies config or database files into the
-install dir — those go to your per-user data directory the first time you
+The installer puts `semsea` on your PATH. Config or database files goes to your per-user data directory the first time you
 run `semsea`.
 
 ## Where semsea keeps its data
